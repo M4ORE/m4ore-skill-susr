@@ -31,3 +31,10 @@ memory/
 # Local environment
 .env
 .env.local
+
+# SP1-004 試做：上游報告書 PDF（第三方資料，不 vendoring 進 repo）
+examples/**/source-*.pdf
+
+# SP1-004 試做：xlsx / docx / pptx 產物（容量大，依 Phase 6 結果再決定是否 commit）
+examples/**/phase4-data-pack.xlsx
+examples/**/phase6-output/

@@ -121,12 +121,22 @@ skills/sustainability-report/
 
 ### Examples
 
-> **TBD** — 待 SP1-004 端到端試做完成後填寫實際輸出範例。預計提供半導體公司情境：
->
-> - `ESG_Data_Pack_2025.xlsx`
-> - `Materiality_Matrix.md`
-> - `Report_2025.docx` / `.pdf`
-> - `Investor_Deck_2025.pptx` / `Board_Deck_2025.pptx`
+端到端試做案例：[`examples/lealea-5364/`](examples/lealea-5364/) — 以力麗觀光開發（5364, TPEx, 觀光業）2023 永續報告書為對照標的，完整跑完 8-Phase SOP。
+
+| 檔案 | Phase | 內容 |
+|---|---|---|
+| `phase1-scoping.md` | 1 | 公司邊界、適用標準、責任分工、9 大假設與限制 |
+| `phase2-research-log.md` | 2 | 4 家旅館業同業 peer benchmark + 法規最新版 + 113 年度排放因子 |
+| `phase3-materiality.md` | 3 | 28 議題池、雙軸評分、矩陣、IRO 對應、利害關係人議合 |
+| `phase4-xlsx-skeleton.md` | 4 | 12 sheets 設計（Scenario A/B 雙軌、HVAC 制冷劑、Scope 3 取捨）|
+| `phase5-chapter-skeleton.md` | 5 | 7 大篇 + 附錄章節骨架 |
+| `phase5-tcfd-sample.md` | 5 | 完整 TCFD 章節示範（IRO → 治理 → 策略 → 行動 → 目標 → KPI → 展望）|
+| `phase6-assembly-plan.md` | 6 | 5 個 sub-skill prompt 套裝 + 失敗模式表 |
+| `phase7-gap-analysis.md` | 7 | **力麗實際 vs SOP 試做 14 項揭露差距總表** |
+| `phase7-pdf-extract.md` | 7 | 力麗 2023 PDF 章節結構抽取（66 頁逐章）|
+| `walkthrough-notes.md` | — | Lessons learned + SOP 評等 + 反向示範意涵 |
+
+**重要發現**：力麗 2023 為台灣中型 TPEx 上市公司的「**反向示範**」典型樣本 — 無雙重重大性、TCFD 完全缺席、GHG 僅 Scope 2 殘缺、GRI 用 2016 舊版、無第三方確信。本案例可直接作為「**升級指南**」教材：「我家公司報告書像力麗，怎麼升級到金管會 ISSB 強制標準？」
 
 ### 開發歷程（PDCA 透明化）
 
@@ -243,7 +253,11 @@ See the directory tree in the [繁體中文 section](#references-目錄導覽) a
 
 ### Examples
 
-> **TBD** — pending SP1-004 end-to-end trial. Will include a semiconductor industry walk-through with ESG Data Pack, materiality matrix, report DOCX / PDF, and investor / board decks.
+End-to-end walkthrough: [`examples/lealea-5364/`](examples/lealea-5364/) — uses **Lealea Hotels (5364, TPEx, hospitality)** 2023 sustainability report as the benchmark target, running the full 8-Phase SOP.
+
+10 deliverables covering Phase 1 scoping → Phase 2 peer benchmark → Phase 3 double materiality → Phase 4 xlsx skeleton → Phase 5 TCFD sample chapter → Phase 6 assembly plan → Phase 7 gap analysis → walkthrough notes.
+
+**Key finding**: Lealea 2023 turned out to be a **reverse-example** typical of mid-cap TPEx-listed companies — no double materiality, TCFD entirely absent, GHG only Scope 2 (incomplete), GRI stuck on 2016, no third-party assurance. The case study works as an **upgrade-path guide**: "my company's report looks like Lealea's — how do I upgrade to FSC ISSB-mandatory standards?"
 
 ### Development History (PDCA Transparency)
 

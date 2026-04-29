@@ -1,9 +1,9 @@
 ---
 id: SP1
 title: 永續報告書 SKILL 在 Claude 環境的建構與優化
-phase: plan
+phase: check
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 tasks:
   - SP1-001
   - SP1-002
@@ -48,11 +48,23 @@ tasks:
 
 ## Check
 
-- [ ] 所有 Task（SP1-001 ~ SP1-004）達到 done
-- [ ] SKILL.md 觸發詞測試通過
-- [ ] 與 document-skills 整合 prompt 經實機驗證可用
-- [ ] References 內容無互相矛盾、無過期法規
+- [x] 所有 Task（SP1-001 ~ SP1-008）達到 done
+- [x] SKILL.md 觸發詞測試通過（部署到 ~/.claude/skills/，自動載入驗證 OK）
+- [⚠️] 與 document-skills 整合 prompt 經**規格驗證**（SP1-003）但**未實機 build**（SP1-004 walkthrough §3.6）— 轉 SP2 backlog
+- [x] References 內容無互相矛盾、SP1-008 跑完最新法規 / 排放因子已回填
 
 ## Act
 
-（本 Sprint 完成後回顧）
+**SP1 收尾結論**：8 個 task 全 done；susr v0.1 已部署、已 GitHub 公開、已端到端驗證。
+
+**SP1-004 端到端試做意外發現**：力麗 2023 為中型 TPEx 上市公司「反向示範」典型 — SOP 試做版本相對實際版本是全方位升級（雙重重大性 / TCFD / Scope 1/2/3 / GRI 2021 / 確信前置）。這讓 examples 變成 gap closing 教材，而不是優秀範本。
+
+**SP2 候選 backlog**（依 SP1-004 walkthrough §3）：
+1. SKILL.md Phase 0 工具依賴分級補強
+2. phase2 PDF binary fallback + 資本額 MOPS 硬規則
+3. materiality 議合方法決策樹
+4. Phase 5 補食安 / 隱私 / 在地三個示範章節
+5. Phase 6 真實環境實機 build 驗證（跨平台字型 / 圖表 / 中文）
+6. 加碼 2 家不同產業（金融 / 食品）驗證 SOP 泛化性
+
+**Sprint 滿意度**：A- — 八卡全收，端到端跑通，意外得到反向示範教材作為產品差異化素材。
