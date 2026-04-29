@@ -1,0 +1,33 @@
+# Original brainstorm seed (private draft, excluded from public repo)
+plan.md
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Logs
+*.log
+
+# Claude local memory (project-scoped memory not for public repo)
+.claude/memory/
+memory/
+
+# Local environment
+.env
+.env.local
