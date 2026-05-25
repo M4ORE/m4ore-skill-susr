@@ -12,6 +12,7 @@ boundary: 營運控制法
 formula: |
   地點基礎：tCO2e = 外購電量 kWh × 0.474 (kg CO2e/kWh, 113 年度) / 1000
   市場基礎：tCO2e = (外購電量 - T-REC) × EF / 1000
+priority: 10
 values_by_year: []
 restatement_flag: false
 xbrl_concept: null

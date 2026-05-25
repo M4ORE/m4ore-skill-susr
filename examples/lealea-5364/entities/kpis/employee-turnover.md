@@ -9,6 +9,7 @@ framework_refs:
   - SASB SV-HL-310a
 boundary: 全體員工（254 人，2023）；含正職、約聘、派遣、兼職、房務外包
 formula: "離職人數 / 期初人數"
+priority: 30
 values_by_year: []
 restatement_flag: false
 xbrl_concept: null

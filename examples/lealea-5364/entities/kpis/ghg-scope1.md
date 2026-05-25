@@ -10,6 +10,7 @@ framework_refs:
   - IPCC AR6 GWP
 boundary: 營運控制法（含直營三館；Scenario B 含委託二館）
 formula: "Σ(Activity × EF / 1000) over 燃氣鍋爐 / 廚房 / 公務車 / 發電機(備援) / HVAC 制冷劑外洩"
+priority: 10
 values_by_year: []
 restatement_flag: false
 xbrl_concept: null
