@@ -483,6 +483,150 @@ def test_chapter_framework_refs_auto_creates_chapter_conforms_to_edge(
     )
 
 
+def test_auto_edge_raises_on_direction_mismatch(
+    tmp_db, tmp_path: Path, monkeypatch,
+) -> None:
+    """R9 防呆：_AUTO_EDGE_RULES 方向顛倒 → 應 raise InvariantError。
+
+    驗收 R8-3 commit 揭露的 latent bug 類型 — 原本 chapter.discloses_topics
+    放 reverse rule 但實際 EdgeSpec 是 chapter→topic（forward），方向顛倒
+    繞過 validate_edge 後 silently 寫進 links 但 invariant view 抓不到。
+    R9 加 validate_edge 防呆後此類 hardcoded rule bug 應 fail-loud。
+
+    做法：monkey patch ``_AUTO_EDGE_FORWARD_RULES`` 加一條故意方向錯誤的
+    rule（``iro`` 為 src，``topic_has_iro`` edge 卻定義 ``topic`` → ``iro``），
+    跑 ingest_markdown_file 應 raise InvariantError。
+    """
+    from susr.brain import ingest as ingest_mod
+    from susr.brain.edges import InvariantError
+
+    # 先 ingest 一個 topic 讓 iro 能 resolve dst
+    topic_md = tmp_path / "E1-test.md"
+    topic_md.write_text(
+        "---\n"
+        "slug: e1-test\n"
+        "entity_type: topic\n"
+        "name: Test Climate\n"
+        "axis: E\n"
+        "impact_score: 4.0\n"
+        "financial_score: 4.0\n"
+        "materiality_tier: 核心\n"
+        "---\n# Topic\n",
+        encoding="utf-8",
+    )
+    ingest_markdown_file(tmp_db, topic_md)
+
+    # 故意倒寫：把 (iro, topic_slug) 放 forward rules — IRO 為 src、topic 為 dst
+    # 但 EdgeSpec topic_has_iro 是 topic→iro，所以這方向是錯的，validate_edge 應 raise
+    bad_forward = dict(ingest_mod._AUTO_EDGE_FORWARD_RULES)
+    bad_forward[("iro", "topic_slug")] = ("topic_has_iro", "topic", False)
+    monkeypatch.setattr(ingest_mod, "_AUTO_EDGE_FORWARD_RULES", bad_forward)
+    # 同時把原本正確的 reverse rule 拿掉，避免它正常建出 edge
+    bad_reverse = dict(ingest_mod._AUTO_EDGE_RULES)
+    bad_reverse.pop(("iro", "topic_slug"), None)
+    monkeypatch.setattr(ingest_mod, "_AUTO_EDGE_RULES", bad_reverse)
+
+    iro_md = tmp_path / "iro-test.md"
+    iro_md.write_text(
+        "---\n"
+        "slug: iro-test\n"
+        "entity_type: iro\n"
+        "topic_slug: e1-test\n"
+        "type: Impact\n"
+        "category: physical\n"
+        "time_horizon: S\n"
+        "financial_magnitude: 1000000\n"
+        "---\n# IRO\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(InvariantError, match="topic_has_iro"):
+        ingest_markdown_file(tmp_db, iro_md)
+
+
+def test_auto_edge_succeeds_on_correct_direction(tmp_db, tmp_path: Path) -> None:
+    """R9：既有正確方向 rule（IRO.topic_slug → topic_has_iro reverse）→ 邊建立成功。
+
+    這是「正常路徑」regression — 確保 validate_edge 防呆不誤殺現有 rules。
+    """
+    topic_md = tmp_path / "E2-test.md"
+    topic_md.write_text(
+        "---\n"
+        "slug: e2-water\n"
+        "entity_type: topic\n"
+        "name: Test Water\n"
+        "axis: E\n"
+        "impact_score: 3.5\n"
+        "financial_score: 3.5\n"
+        "materiality_tier: 重大\n"
+        "---\n# Topic\n",
+        encoding="utf-8",
+    )
+    ingest_markdown_file(tmp_db, topic_md)
+
+    iro_md = tmp_path / "iro-water.md"
+    iro_md.write_text(
+        "---\n"
+        "slug: iro-water-shortage\n"
+        "entity_type: iro\n"
+        "topic_slug: e2-water\n"
+        "type: Risk\n"
+        "category: transition\n"
+        "time_horizon: M\n"
+        "financial_magnitude: 2000000\n"
+        "---\n# IRO\n",
+        encoding="utf-8",
+    )
+    ingest_markdown_file(tmp_db, iro_md)
+
+    # 應該建出 topic_has_iro edge（topic e2-water → iro iro-water-shortage）
+    rows = tmp_db.execute(
+        "SELECT p1.slug, p2.slug FROM links l "
+        "JOIN pages p1 ON l.src_page_id = p1.id "
+        "JOIN pages p2 ON l.dst_page_id = p2.id "
+        "WHERE l.edge_type = 'topic_has_iro'"
+    ).fetchall()
+    assert ("e2-water", "iro-water-shortage") in [tuple(r) for r in rows], (
+        f"expected topic_has_iro e2-water→iro-water-shortage, got: {rows}"
+    )
+
+
+def test_auto_edge_skips_silently_when_target_missing(
+    tmp_db, tmp_path: Path,
+) -> None:
+    """R9：target page 不存在 → silent skip（lenient 模式不 raise）。
+
+    這跟 direction 錯誤的行為不同 — 前者是「資料 incomplete，未來補上時
+    re-ingest 即可」，後者是「hardcoded bug 該爆」。
+    """
+    from susr.brain.edges import InvariantError
+
+    # Ingest IRO 但 topic 尚未 ingest（pass 1 only context）
+    iro_md = tmp_path / "iro-orphan.md"
+    iro_md.write_text(
+        "---\n"
+        "slug: iro-orphan\n"
+        "entity_type: iro\n"
+        "topic_slug: e9-not-yet-ingested\n"
+        "type: Opportunity\n"
+        "category: market\n"
+        "time_horizon: L\n"
+        "financial_magnitude: 500000\n"
+        "---\n# Orphan IRO\n",
+        encoding="utf-8",
+    )
+    # 不應 raise — target page 不存在是 lenient skip 範疇
+    try:
+        page_id = ingest_markdown_file(tmp_db, iro_md)
+    except InvariantError:
+        pytest.fail("target missing should silent skip, not raise InvariantError")
+    assert page_id > 0  # IRO 本體 ingest 成功
+    # 確認沒有任何 topic_has_iro edge 被建（target 不存在）
+    edge_count = tmp_db.execute(
+        "SELECT COUNT(*) FROM links WHERE edge_type = 'topic_has_iro'"
+    ).fetchone()[0]
+    assert edge_count == 0
+
+
 def test_lealea_i2_invariant_pass_after_frameworks(tmp_db) -> None:
     """端到端：ingest 全 lealea entities/ + chapters/ 後 I2 = 0 violations。
 

@@ -35,6 +35,7 @@ from typing import Any, Optional
 
 import yaml
 
+from susr.brain.edges import validate_edge
 from susr.brain.entities import ENTITY_SCHEMAS
 from susr.brain.pages import put_page
 
@@ -496,6 +497,12 @@ def _auto_create_edges_for_page(
 
     Returns count of edges created (不含已存在的 — idempotent via ON CONFLICT).
     Skip silently 若 target page 不存在（lenient 容忍 — 未來補上時可重 ingest）。
+
+    R9 防呆：INSERT 前對 (src_entity_type, edge_type, dst_entity_type) 呼叫
+    ``validate_edge``。direction 顛倒（hardcoded rule bug）應 fail-loud 為
+    ``InvariantError``，不再 silent 寫進 links 表繞過 invariant view 抓不到
+    （見 R8-3 commit 揭露的 ``chapter.discloses_topics`` 反向 latent bug）。
+    target page 尚未 ingest 等資料 incomplete 情境仍 silent skip。
     """
     created = 0
 
@@ -503,6 +510,8 @@ def _auto_create_edges_for_page(
     for (et, key), (edge_type, src_et, is_list) in _AUTO_EDGE_RULES.items():
         if et != entity_type or key not in frontmatter:
             continue
+        # R9: hardcoded rule direction 防呆 — 方向錯應爆而非 silent skip
+        validate_edge(src_et, edge_type, entity_type)
         raw = frontmatter[key]
         if raw is None:
             continue
@@ -525,12 +534,14 @@ def _auto_create_edges_for_page(
                 if cur.rowcount > 0:
                     created += 1
             except sqlite3.Error:
-                continue  # invariant validate 等錯誤一律 swallow（lenient）
+                continue  # DB 層 error 一律 swallow（lenient）
 
     # Forward rules: page_id 是 src，frontmatter slug 是 dst
     for (et, key), (edge_type, dst_et, is_list) in _AUTO_EDGE_FORWARD_RULES.items():
         if et != entity_type or key not in frontmatter:
             continue
+        # R9: hardcoded rule direction 防呆
+        validate_edge(entity_type, edge_type, dst_et)
         raw = frontmatter[key]
         if raw is None:
             continue
