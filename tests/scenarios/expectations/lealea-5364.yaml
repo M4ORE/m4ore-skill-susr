@@ -698,3 +698,45 @@ projects_2025_chapter_local_indigenous:
     - "泰雅"
     - "在地"
   min_lines: 80
+
+# ---------------------------------------------------------------------------
+# R8-2 補：entities/actions/ × 14（R8-1 ingest 自動建 iro_addressed_by edge）
+# ---------------------------------------------------------------------------
+
+entities_actions_e1_hvac:
+  file: entities/actions/E1-climate-action-hvac-upgrade.md
+  description: E1 物理風險對應 Action — HVAC 升級
+  must_contain:
+    - "entity_type: action"
+    - "E1-climate-risk-physical-heat-shock"
+    - "HVAC"
+    - "工程部"
+  min_lines: 15
+
+entities_actions_s6_haccp:
+  file: entities/actions/S6-food-safety-action-haccp-upgrade.md
+  description: S6 食安 risk 對應 Action — HACCP 升級
+  must_contain:
+    - "entity_type: action"
+    - "S6-food-safety-risk-incident"
+    - "HACCP"
+    - "餐飲部"
+  min_lines: 15
+
+entities_actions_s7_iso27001:
+  file: entities/actions/S7-customer-privacy-action-iso27001-pilot.md
+  description: S7 隱私 risk 對應 Action — ISO 27001 試點
+  must_contain:
+    - "entity_type: action"
+    - "S7-customer-privacy-risk-leak"
+    - "ISO 27001"
+  min_lines: 15
+
+entities_actions_s12_co_create:
+  file: entities/actions/S12-indigenous-culture-action-co-create.md
+  description: S12 在地原民 impact 對應 Action — 部落 co-create
+  must_contain:
+    - "entity_type: action"
+    - "S12-indigenous-culture-impact-preservation"
+    - "泰雅"
+  min_lines: 15
