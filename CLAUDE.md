@@ -597,3 +597,38 @@ pip install susr                # 一次性
   - `restore_from` 對 `date` value_type round-trip 非嚴格 lossless
   - sqlite-vec 0.1.9 TEXT metadata NOT NULL 約束（vec_chunks insert 需用空字串）
 - **下一步**：Step 2 — 用 Option C 結構重組 `examples/lealea-5364/` 並用 brain 跑 Phase 3 端到端
+
+### 2026-05-25 · Step 2 完成 — Lealea 重組 + Phase 3 端到端驗收
+
+3 個 subagent 收尾（A 重組 + C 跨年 restate scenario + B Phase 3 brain walkthrough）。
+
+**產出**：
+- `examples/lealea-5364/` 重組為 Option C：58 新檔（_client + 28 topics + 7 stakeholders + 2 governance + 8 KPIs + 3 targets + 9 project files）+ `_legacy/` 保留 SP1-004 原檔
+- `tests/scenarios/expectations/lealea-5364.yaml` 9 → 31 keys
+- `docs/user-guide/scenarios/客戶今年要重述去年範疇3.md`（user-guide 缺口補上）
+- `docs/walkthroughs/lealea-5364-phase3.md`（**Layer 5 acceptance test 第一份**，767 行）
+
+**驗證**：180/180 tests pass（158 baseline + 22 新 lealea scenario）— content invariants 搬家不變
+
+**MVP success criteria 評估**（依 §8 MVP 第一刀「成功指標」）：
+- 雙軸評分：✅
+- 矩陣（md + SVG）：✅
+- **IRO 對應：❌**（4 個 Phase 3 tools **沒有任何一個處理 IRO 建立**）
+- Claude Desktop UI 端到端：⏳ walkthrough 走函式直呼，未驗 stdio transport
+- → **MVP 部分達成**，但 IRO 缺口必須 R3 補
+
+**Step 2-B walkthrough 揭露 5 個 R3 必修缺口**（dashboard pivot backlog 已列）：
+- 🔴 P0a: Ingest schema strict-mode 阻擋真實 markdown
+- 🔴 P0b: 缺 IRO 建立 tool（**新發現**）
+- 🔴 P0c: materiality_tier 二套標準衝突
+- 🟡 P1a: Phase 3 tools 完全不走 brain DB（直接讀寫 markdown — brain 形同未用）
+- 🟡 P1b: FTS5 中文同義詞召回崩
+- 🟡 P1c: I1 invariant 雙路徑 evidence 不通
+
+**最重要的學習**：
+
+> **180/180 unit tests pass 並不保證端到端 UX 沒缺口**。4 個 Phase 3 tools 各自的 unit test 通過，但端到端跑下來最重要的「IRO 對應」整個沒做、ingest 對真實 markdown 100% 失敗。
+
+→ §6.1 hard rule（每個 feature 必有測試）**還不夠** —— **每個 milestone 必須有對應的 Layer 5 end-to-end walkthrough acceptance test**。本 Step 2-B 模式應該成為未來 milestone 收尾的標配（CLAUDE.md §6 後續可考慮加 Layer 5 章節）。
+
+**下一步**：R3 P0 三項優先（ingest tolerance / IRO tool / materiality_tier 收斂）— 可派 3 個 subagent 並行
