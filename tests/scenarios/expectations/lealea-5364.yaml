@@ -7,9 +7,19 @@
 #   - min_lines = 防止 example 被意外截斷或抽空
 #
 # 每份檔案的 description 解釋這份 expectation 在守護什麼 invariant。
+#
+# 結構說明（Step 2 重組後）：
+#   - SP1-004 的原 phase*.md 已搬至 _legacy/，保留為歷史對照
+#   - 新增 Option C 結構：_client.md / entities/ / projects/2025-sustainability-report/
+#   - 本檔分兩段：「舊 9 phase + walkthrough」（_legacy/ 路徑）+「新 Option C 結構檔」
+#   - 核心原則：content-based 斷言應仍 pass（內容只是搬家）
+
+# ============================================================
+# 第一段：SP1-004 legacy phase*.md（保留歷史對照）
+# ============================================================
 
 phase1:
-  file: phase1-scoping.md
+  file: _legacy/phase1-scoping.md
   description: Phase 1 必須鎖定「公司基本資料 + 報告邊界 + 適用標準 + 報告期間 + 強制章節 + 責任分工 + 假設限制」七大要素；旅館業個案必須揭露營運控制法與委託經營邊界爭議
   must_contain:
     - "力麗觀光"
@@ -30,7 +40,7 @@ phase1:
   min_lines: 80
 
 phase2:
-  file: phase2-research-log.md
+  file: _legacy/phase2-research-log.md
   description: Phase 2 research log 必須含 peer benchmark、法規最新版、排放因子三大研究任務；旅館業 peer 必須含同業上市公司；排放因子必須含台電電力係數與 Scope 1 固定燃燒因子
   must_contain:
     - "Peer"
@@ -52,7 +62,7 @@ phase2:
   min_lines: 100
 
 phase3:
-  file: phase3-materiality.md
+  file: _legacy/phase3-materiality.md
   description: Phase 3 必須採雙重重大性方法（Impact × Financial 雙軸），含利害關係人盤點 + 議合方法 + 議題池（E/S/G 三軸）+ 矩陣 + IRO 對應章節；至少含旅館業核心議題（食安、氣候、能源、隱私）
   must_contain:
     - "雙重重大性"
@@ -72,7 +82,7 @@ phase3:
   min_lines: 120
 
 phase4:
-  file: phase4-xlsx-skeleton.md
+  file: _legacy/phase4-xlsx-skeleton.md
   description: Phase 4 xlsx skeleton 必須含 GHG Scope 1/2/3 三範疇分 sheet、Scope 2 雙軌（地點/市場基礎）、水/廢棄物/HR/職安食安/客戶 sheet；GHG 計算必須引用排放因子；旅館業特化必須含據點 master 與委託經營 Scenario 雙軌
   must_contain:
     - "Scope 1"
@@ -95,7 +105,7 @@ phase4:
   min_lines: 150
 
 phase5_chapter_skeleton:
-  file: phase5-chapter-skeleton.md
+  file: _legacy/phase5-chapter-skeleton.md
   description: Phase 5 章節骨架必須含 7 大篇章 + 附錄，必須含 TCFD 完整章節 + 食安/隱私/在地高優先章節；必須遵循 IRO→治理→策略→行動→目標→KPI→展望 連結性公式；附錄必須含 GRI/SASB/TCFD index
   must_contain:
     - "IRO"
@@ -117,7 +127,7 @@ phase5_chapter_skeleton:
   min_lines: 80
 
 phase5_tcfd_sample:
-  file: phase5-tcfd-sample.md
+  file: _legacy/phase5-tcfd-sample.md
   description: Phase 5 TCFD 完整章節示範必須含 TCFD 4 構面（治理、策略、風險管理、指標與目標）；策略必須含情境分析（1.5°C/2°C/4°C）；目標必須有基線+時程+驗證三要素；必須有未達標誠實揭露（反綠色洗白）
   must_contain:
     - "TCFD"
@@ -145,7 +155,7 @@ phase5_tcfd_sample:
   min_lines: 100
 
 phase6:
-  file: phase6-assembly-plan.md
+  file: _legacy/phase6-assembly-plan.md
   description: Phase 6 組裝計畫必須含 docx/pdf/pptx 三類 sub-skill prompt 套裝；必須含依賴與 Pre-flight 檢查；必須含失敗模式 fallback；必須涵蓋投資人版與董事會版兩種簡報受眾
   must_contain:
     - "document-skills"
@@ -164,7 +174,7 @@ phase6:
   min_lines: 80
 
 phase7_gap_analysis:
-  file: phase7-gap-analysis.md
+  file: _legacy/phase7-gap-analysis.md
   description: Phase 7 gap analysis 必須對照試做 vs 力麗實際版；必須點出核心缺口（TCFD 缺席、Scope 1/3 缺漏、單向重大性、無第三方確信、GRI 舊版）；必須含 SOP 強項/弱項自省與合規檢查
   must_contain:
     - "力麗"
@@ -185,8 +195,24 @@ phase7_gap_analysis:
     - "Gap"
   min_lines: 100
 
+phase7_pdf_extract:
+  file: _legacy/phase7-pdf-extract.md
+  description: Phase 7 PDF extract 必須抽出力麗 2023 PDF 章節結構，揭露核心缺口（無 TCFD、僅 Scope 2、無第三方確信、GRI 2016 舊版）；必須對應 phase7-gap-analysis 的證據基礎
+  must_contain:
+    - "力麗"
+    - "Scope"
+    - "GRI"
+    - "TCFD"
+    - "重大議題"
+    - "範疇"
+  must_contain_any:
+    - "未經外部"
+    - "無第三方"
+    - "未揭露"
+  min_lines: 60
+
 walkthrough:
-  file: walkthrough-notes.md
+  file: _legacy/walkthrough-notes.md
   description: Walkthrough notes 必須含試做摘要表（Phase 1-7 產出對照）、SOP 串連結論、痛點清單、評等；必須誠實揭露未實機 build 的 phase 與工具依賴問題
   must_contain:
     - "8-Phase"
@@ -202,4 +228,365 @@ walkthrough:
     - "Poppler"
     - "pypdf"
     - "依賴"
+  min_lines: 60
+
+# ============================================================
+# 第二段：Option C 新結構（_client.md / entities/ / projects/）
+# ============================================================
+
+client_profile:
+  file: _client.md
+  description: _client.md 為跨年度常駐 client 資料；必須含公司基本資料、報告邊界（營運控制法）、5 旅館據點 master、責任分工；必須帶 YAML frontmatter（entity_type=client）
+  must_contain:
+    - "entity_type: client"
+    - "slug: lealea-5364"
+    - "力麗觀光"
+    - "5364"
+    - "TPEx"
+    - "營運控制法"
+    - "明池"
+    - "棲蘭"
+    - "日潭"
+    - "月潭"
+    - "木棉道"
+    - "Scenario A"
+    - "Scenario B"
+    - "csr@lealeahotel.com.tw"
+  must_contain_any:
+    - "GRI"
+    - "TCFD"
+  min_lines: 50
+
+entities_topics_e1:
+  file: entities/topics/E1-climate.md
+  description: E1 氣候變遷議題 entity 必須帶 frontmatter（雙軸評分）+ 旅館業特殊性 + IRO + 對應 TCFD 章節；屬於核心象限
+  must_contain:
+    - "entity_type: topic"
+    - "axis: E"
+    - "impact_score: 4.5"
+    - "financial_score: 4.0"
+    - "materiality_tier: 核心"
+    - "氣候變遷"
+    - "旅館業"
+    - "TCFD"
+    - "Impact"
+    - "Risk"
+    - "Opportunity"
+  must_contain_any:
+    - "永續旅遊"
+    - "碳費"
+  min_lines: 15
+
+entities_topics_s6:
+  file: entities/topics/S6-food-safety.md
+  description: S6 食品安全議題 entity 必須是雙軸最高（4.5 / 4.5）的核心象限；必須含 HACCP + 食安事件 + 餐飲營收占比觸發第三方強制確信
+  must_contain:
+    - "entity_type: topic"
+    - "axis: S"
+    - "impact_score: 4.5"
+    - "financial_score: 4.5"
+    - "materiality_tier: 核心"
+    - "食品安全"
+    - "HACCP"
+  must_contain_any:
+    - "餐飲"
+    - "確信"
+  min_lines: 15
+
+entities_topics_s12_indigenous:
+  file: entities/topics/S12-indigenous-culture.md
+  description: S12 文化保存與原民共榮 — SP1-004 試做特化議題；明池泰雅族文化保存；旅館業常忽略；本 SOP 主動納入
+  must_contain:
+    - "entity_type: topic"
+    - "axis: S"
+    - "materiality_tier: 重大"
+    - "文化保存"
+    - "明池"
+    - "泰雅"
+  must_contain_any:
+    - "原民"
+    - "原住民"
+  min_lines: 10
+
+entities_topics_g2_integrity:
+  file: entities/topics/G2-integrity.md
+  description: G2 誠信經營為金管會強制章節；必須在核心象限（Financial ≥ 4.0）；對應 IRO 含採購弊端風險
+  must_contain:
+    - "entity_type: topic"
+    - "axis: G"
+    - "materiality_tier: 核心"
+    - "誠信經營"
+    - "金管會"
+  must_contain_any:
+    - "採購"
+    - "賄賂"
+  min_lines: 10
+
+entities_stakeholders_employees:
+  file: entities/stakeholders/employees.md
+  description: 員工 stakeholder 必須含旅館業特化（正職 / 派遣 / 房務外包 / 移工 / 輪班 / 夜班）；必須對應 S1-S5 議題群
+  must_contain:
+    - "entity_type: stakeholder"
+    - "員工"
+    - "房務外包"
+  must_contain_any:
+    - "夜班"
+    - "輪班"
+    - "焦點"
+  min_lines: 10
+
+entities_stakeholders_community:
+  file: entities/stakeholders/community-indigenous.md
+  description: 在地社區 stakeholder 必須含南投 / 台南 / 宜蘭明池泰雅族部落諮詢管道；對應 S10/S11/S12 議題
+  must_contain:
+    - "entity_type: stakeholder"
+    - "在地社區"
+    - "明池"
+    - "泰雅"
+  must_contain_any:
+    - "原住民"
+    - "馬告"
+  min_lines: 10
+
+entities_governance_committee:
+  file: entities/governance/sustainability-committee.md
+  description: 永續發展執行委員會 entity 必須含位階（董事會下設）、4 個工作小組（環境/社會/治理/利害關係人）、議題管轄
+  must_contain:
+    - "entity_type: governance"
+    - "永續發展執行委員會"
+    - "董事會"
+    - "副總"
+  must_contain_any:
+    - "工作小組"
+    - "永續委員會"
+  min_lines: 10
+
+entities_kpis_scope1:
+  file: entities/kpis/ghg-scope1.md
+  description: Scope 1 KPI entity 必須含 GRI 305-1、GHG Protocol、營運控制法、計算公式；對齊原版註明力麗 2023 未揭露
+  must_contain:
+    - "entity_type: kpi"
+    - "Scope 1"
+    - "tCO2e"
+    - "GRI 305-1"
+    - "GHG Protocol"
+    - "營運控制法"
+    - "EF"
+  must_contain_any:
+    - "未揭露"
+    - "缺口"
+  min_lines: 15
+
+entities_kpis_scope2:
+  file: entities/kpis/ghg-scope2.md
+  description: Scope 2 KPI 必須含雙軌（地點 / 市場基礎）+ 113 年度台電係數 0.474；必須含 T-REC 計算
+  must_contain:
+    - "entity_type: kpi"
+    - "Scope 2"
+    - "tCO2e"
+    - "GRI 305-2"
+    - "地點基礎"
+    - "市場基礎"
+    - "0.474"
+    - "T-REC"
+  must_contain_any:
+    - "雙軌"
+    - "kg CO2e/kWh"
+  min_lines: 15
+
+entities_kpis_food_safety:
+  file: entities/kpis/food-safety-incidents.md
+  description: 食安事件 KPI 必須含 GRI 416、HACCP、嚴重度分級；旅館業特化（餐飲營收 ≥ 50% 觸發強制確信）
+  must_contain:
+    - "entity_type: kpi"
+    - "食安事件"
+    - "GRI 416"
+    - "HACCP"
+  must_contain_any:
+    - "餐飲營收"
+    - "確信"
+  min_lines: 10
+
+entities_targets_net_zero:
+  file: entities/targets/tcfd-net-zero-2050.md
+  description: 2050 淨零目標 entity 必須含 SBTi 1.5°C 路徑、第三方確信路徑、Scope 1+2 階段目標
+  must_contain:
+    - "entity_type: target"
+    - "2050"
+    - "淨零"
+    - "SBTi"
+    - "Scope 1"
+    - "Scope 2"
+    - "2030"
+  must_contain_any:
+    - "TCFD"
+    - "確信"
+  min_lines: 10
+
+projects_2025_project:
+  file: projects/2025-sustainability-report/_project.md
+  description: project _project.md 必須含 framework_bundle（GRI 2021 / TCFD / SASB / ISSB）、report period 2023、client_slug、test 試做說明
+  must_contain:
+    - "entity_type: report"
+    - "client_slug: lealea-5364"
+    - "GRI Standards 2021"
+    - "TCFD"
+    - "SASB"
+    - "ISSB"
+    - "2023"
+  must_contain_any:
+    - "金管會"
+    - "In Accordance"
+  min_lines: 30
+
+projects_2025_scoping:
+  file: projects/2025-sustainability-report/scoping.md
+  description: project scoping 為年度版本決策（不重複 _client.md 公司基本資料）；必須含報告邊界、適用標準、強制章節、假設限制
+  must_contain:
+    - "報告邊界"
+    - "營運控制法"
+    - "適用標準"
+    - "GRI"
+    - "TCFD"
+    - "金管會"
+    - "雙重重大性"
+    - "強制章節"
+    - "假設"
+  must_contain_any:
+    - "委託經營"
+    - "明池"
+    - "棲蘭"
+  min_lines: 50
+
+projects_2025_materiality:
+  file: projects/2025-sustainability-report/materiality-2025.md
+  description: project materiality 必須含 7 利害關係人、28 議題池雙軸評分總表、矩陣、IRO 對應；連結到 entities/topics/ 與 entities/stakeholders/
+  must_contain:
+    - "雙重重大性"
+    - "Impact"
+    - "Financial"
+    - "利害關係人"
+    - "議合"
+    - "矩陣"
+    - "食品安全"
+    - "氣候變遷"
+    - "能源管理"
+    - "顧客隱私"
+    - "IRO"
+    - "entities/topics/"
+    - "entities/stakeholders/"
+  must_not_contain:
+    - "單向 impact materiality"
+  min_lines: 80
+
+projects_2025_research_log:
+  file: projects/2025-sustainability-report/research-log.md
+  description: project research log 為 phase2 直搬；必須保留 peer benchmark + 法規 + 排放因子三任務內容
+  must_contain:
+    - "Peer"
+    - "GRI"
+    - "TCFD"
+    - "SASB"
+    - "金管會"
+    - "排放因子"
+    - "Scope 2"
+    - "kg CO2e/kWh"
+    - "環境部"
+  must_contain_any:
+    - "晶華"
+    - "雲品"
+    - "寒舍"
+    - "國賓"
+  min_lines: 100
+
+projects_2025_chapter_tcfd:
+  file: projects/2025-sustainability-report/chapters/tcfd-2025.md
+  description: 完整 TCFD 章節（從 phase5-tcfd-sample 直搬）；必須含 4 構面 + 情境分析 + 7 段公式 + 未達標誠實揭露
+  must_contain:
+    - "TCFD"
+    - "IRO"
+    - "Impact"
+    - "Risk"
+    - "Opportunity"
+    - "治理"
+    - "策略"
+    - "風險管理"
+    - "情境分析"
+    - "1.5"
+    - "Scope 1"
+    - "Scope 2"
+    - "Scope 3"
+    - "基線"
+    - "未達標"
+    - "SBTi"
+  must_contain_any:
+    - "ISSB"
+    - "IFRS S2"
+  min_lines: 100
+
+projects_2025_chapter_skeleton:
+  file: projects/2025-sustainability-report/chapters/_skeleton.md
+  description: 章節骨架（從 phase5-chapter-skeleton 直搬）；7 大篇章 + IRO 公式 + 高優先示範章節清單
+  must_contain:
+    - "IRO"
+    - "治理"
+    - "策略"
+    - "TCFD"
+    - "食品安全"
+    - "顧客隱私"
+    - "GRI"
+    - "雙重重大性"
+    - "誠信經營"
+  must_contain_any:
+    - "未達標"
+    - "反綠色洗白"
+  min_lines: 80
+
+projects_2025_assembly_plan:
+  file: projects/2025-sustainability-report/assembly-plan.md
+  description: 組裝計畫（從 phase6 直搬）；docx / pdf / pptx prompt 套裝 + 失敗模式
+  must_contain:
+    - "document-skills"
+    - "docx"
+    - "pdf"
+    - "pptx"
+    - "pandoc"
+    - "fallback"
+  must_contain_any:
+    - "投資人"
+    - "董事會"
+  min_lines: 80
+
+projects_2025_gap_analysis:
+  file: projects/2025-sustainability-report/gap-analysis.md
+  description: gap analysis（從 phase7 直搬）；對照試做 vs 力麗實際；核心缺口（TCFD 缺席 / Scope 1/3 缺漏 / 單向重大性）
+  must_contain:
+    - "力麗"
+    - "TCFD"
+    - "Scope 1"
+    - "Scope 3"
+    - "雙重重大性"
+    - "第三方確信"
+    - "GRI"
+    - "強項"
+    - "弱項"
+  must_contain_any:
+    - "缺席"
+    - "缺漏"
+    - "gap"
+    - "Gap"
+  min_lines: 100
+
+projects_2025_pdf_extract:
+  file: projects/2025-sustainability-report/pdf-extract.md
+  description: 力麗 PDF 章節抽取（從 phase7-pdf-extract 直搬）；揭露原版 TCFD 缺席 / 僅 Scope 2 / 無第三方確信
+  must_contain:
+    - "力麗"
+    - "GRI"
+    - "Scope"
+    - "重大議題"
+  must_contain_any:
+    - "未揭露"
+    - "無第三方"
+    - "未經外部"
   min_lines: 60
