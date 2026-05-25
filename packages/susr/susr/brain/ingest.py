@@ -321,6 +321,7 @@ def ingest_markdown_file(
     entity_type: str | None = None,
     tenant_id: str | None = None,
     project_slug: str | None = None,
+    auto_link_edges: bool = True,
 ) -> int:
     """讀 ``.md`` 檔，切 frontmatter+body，normalize 後寫進 brain。
 
@@ -364,7 +365,7 @@ def ingest_markdown_file(
     fm_clean["slug"] = actual_slug  # 確保 slug 一致
 
     title = fm_clean.get("name") or fm_clean.get("legal_name") or actual_slug
-    return put_page(
+    page_id = put_page(
         conn,
         slug=actual_slug,
         entity_type=et,
@@ -376,11 +377,177 @@ def ingest_markdown_file(
         project_slug=project_slug,
     )
 
+    # R8-1：依 frontmatter 宣告的關係自動建 edges（lenient — target 不存在 skip）
+    if auto_link_edges:
+        _auto_create_edges_for_page(
+            conn, page_id, et, fm_clean, tenant_id=tenant_id,
+        )
+
+    return page_id
+
 
 # 預設略過：legacy SOP 試做檔（已過時，schema 不對齊）、project / client 主檔
 # （由專門 helper 處理，因為 frontmatter 不一定符合「常駐 entity」結構）。
 _DEFAULT_SKIP_PARTS: frozenset[str] = frozenset({"_legacy", ".susr", ".git"})
 _DEFAULT_SKIP_FILES: frozenset[str] = frozenset({"_project.md", "_client.md"})
+
+
+# ---------------------------------------------------------------------------
+# R8-1 — Auto-edge creation rules
+# ---------------------------------------------------------------------------
+# 修 R6 walkthrough §7 R8-1 揭露 — IRO ingest 進 brain 為 page 但
+# topic_has_iro edge 沒建，導致 I1a invariant 9 violations.
+#
+# 規則格式：(entity_type, frontmatter_key) → (edge_type, target_entity_type, list)
+#   - direction always "external_is_src": frontmatter[key] 指 src page，
+#     本 ingested page 是 dst（呼應 EDGE_REGISTRY 內 spec 的 src/dst entity_type）
+#   - list=True 表 frontmatter[key] 是 list，每個元素建一條 edge
+#
+# 為何不 forward direction（本 page 是 src）：實務上 frontmatter declared edge
+# 通常是「我屬於誰」（child-to-parent 指 parent slug），src 必須是被指的那邊。
+
+_AutoEdgeRule = tuple[str, str, bool]  # (edge_type, target_entity_type, is_list)
+_AUTO_EDGE_RULES: dict[tuple[str, str], _AutoEdgeRule] = {
+    # IRO ingest → topic_has_iro from topic (frontmatter.topic_slug) to this IRO
+    ("iro",         "topic_slug"):       ("topic_has_iro",          "topic",       False),
+    # Action ingest → iro_addressed_by from IRO(s) (frontmatter.iro_addressed list) to this Action
+    # Note: ActionFrontmatter schema uses iro_addressed: Sequence[str]
+    ("action",      "iro_addressed"):    ("iro_addressed_by",       "iro",         True),
+    # DataPoint ingest → kpi_reported_as from KPI to this DataPoint
+    ("datapoint",   "kpi_slug"):         ("kpi_reported_as",        "kpi",         False),
+    # DataPoint ingest → datapoint_derived_from from source_doc to this DataPoint (list)
+    ("datapoint",   "source_refs"):      ("datapoint_derived_from", "source_doc",  True),
+    # Engagement ingest → stakeholder_engaged_via from stakeholder to this Engagement
+    ("engagement",  "stakeholder_slug"): ("stakeholder_engaged_via", "stakeholder", False),
+    # Engagement ingest → engagement_raised_topic per topic in topic_slugs (list)
+    ("engagement",  "topic_slugs"):      ("engagement_raised_topic", "topic",      True),
+    # Chapter ingest → discloses_topic for each topic in discloses_topics (list)
+    ("chapter",     "discloses_topics"): ("discloses_topic",        "topic",       True),
+    # Target ingest → target_measures (target → kpi); kpi_slug from frontmatter,
+    # but EdgeSpec is target→kpi so this is FORWARD. Special-cased below.
+    # Action ingest → action_tracks (action → target); not yet wired (Phase 5 範疇)
+}
+
+# Forward rules: ingested page is SRC, frontmatter[key] is DST slug.
+_AutoEdgeForwardRule = tuple[str, str, bool]  # (edge_type, dst_entity_type, is_list)
+_AUTO_EDGE_FORWARD_RULES: dict[tuple[str, str], _AutoEdgeForwardRule] = {
+    # Target.kpi_slug → target_measures (target → kpi)
+    ("target", "kpi_slug"): ("target_measures", "kpi", False),
+}
+
+
+def _resolve_page_id_for_edge(
+    conn: sqlite3.Connection,
+    slug: str,
+    expected_entity_type: str,
+    *,
+    tenant_id: Optional[str] = None,
+) -> Optional[int]:
+    """找 slug 對應 page_id，兼容雙慣例（``X`` / ``<type>s/X`` / ``<type>/X``）。
+
+    Returns page_id (int) or None 若找不到。R8+ R4c 議題未收斂前的兼容層。
+    """
+    # 嘗試多種 slug 形式（brain slug 雙慣例 — R4c backlog）
+    plural = f"{expected_entity_type}s/"
+    singular = f"{expected_entity_type}/"
+    candidates: list[str] = [
+        slug,
+        plural + slug if not slug.startswith(plural) else slug,
+        singular + slug if not slug.startswith(singular) else slug,
+    ]
+    seen: set[str] = set()
+    for cand in candidates:
+        if cand in seen:
+            continue
+        seen.add(cand)
+        if tenant_id is None:
+            row = conn.execute(
+                "SELECT id FROM pages WHERE slug = ? AND tenant_id IS NULL "
+                "AND deleted_at IS NULL",
+                [cand],
+            ).fetchone()
+        else:
+            row = conn.execute(
+                "SELECT id FROM pages WHERE slug = ? AND tenant_id = ? "
+                "AND deleted_at IS NULL",
+                [cand, tenant_id],
+            ).fetchone()
+        if row is not None:
+            return int(row[0])
+    return None
+
+
+def _auto_create_edges_for_page(
+    conn: sqlite3.Connection,
+    page_id: int,
+    entity_type: str,
+    frontmatter: dict[str, Any],
+    *,
+    tenant_id: Optional[str] = None,
+) -> int:
+    """依 _AUTO_EDGE_RULES + _AUTO_EDGE_FORWARD_RULES 建 edges。
+
+    Returns count of edges created (不含已存在的 — idempotent via ON CONFLICT).
+    Skip silently 若 target page 不存在（lenient 容忍 — 未來補上時可重 ingest）。
+    """
+    created = 0
+
+    # Reverse rules: frontmatter slug 是 src，page_id 是 dst
+    for (et, key), (edge_type, src_et, is_list) in _AUTO_EDGE_RULES.items():
+        if et != entity_type or key not in frontmatter:
+            continue
+        raw = frontmatter[key]
+        if raw is None:
+            continue
+        target_slugs: list[str] = raw if is_list and isinstance(raw, list) else [raw]
+        for t_slug in target_slugs:
+            if not isinstance(t_slug, str) or not t_slug.strip():
+                continue
+            src_id = _resolve_page_id_for_edge(
+                conn, t_slug.strip(), src_et, tenant_id=tenant_id
+            )
+            if src_id is None:
+                continue  # target 尚未 ingest，skip 容忍
+            try:
+                cur = conn.execute(
+                    "INSERT INTO links (src_page_id, dst_page_id, edge_type, properties) "
+                    "VALUES (?, ?, ?, '{}') "
+                    "ON CONFLICT(src_page_id, dst_page_id, edge_type) DO NOTHING",
+                    [src_id, page_id, edge_type],
+                )
+                if cur.rowcount > 0:
+                    created += 1
+            except sqlite3.Error:
+                continue  # invariant validate 等錯誤一律 swallow（lenient）
+
+    # Forward rules: page_id 是 src，frontmatter slug 是 dst
+    for (et, key), (edge_type, dst_et, is_list) in _AUTO_EDGE_FORWARD_RULES.items():
+        if et != entity_type or key not in frontmatter:
+            continue
+        raw = frontmatter[key]
+        if raw is None:
+            continue
+        target_slugs = raw if is_list and isinstance(raw, list) else [raw]
+        for t_slug in target_slugs:
+            if not isinstance(t_slug, str) or not t_slug.strip():
+                continue
+            dst_id = _resolve_page_id_for_edge(
+                conn, t_slug.strip(), dst_et, tenant_id=tenant_id
+            )
+            if dst_id is None:
+                continue
+            try:
+                cur = conn.execute(
+                    "INSERT INTO links (src_page_id, dst_page_id, edge_type, properties) "
+                    "VALUES (?, ?, ?, '{}') "
+                    "ON CONFLICT(src_page_id, dst_page_id, edge_type) DO NOTHING",
+                    [page_id, dst_id, edge_type],
+                )
+                if cur.rowcount > 0:
+                    created += 1
+            except sqlite3.Error:
+                continue
+    return created
 
 
 def ingest_directory(
@@ -427,24 +594,56 @@ def ingest_directory(
     skip_parts = skip_parts | {".susr", ".git"}
     skip_files = set() if include_project_and_client else set(_DEFAULT_SKIP_FILES)
 
+    # R8-1：兩階段 ingest — pass 1 全 put_page（auto_link_edges=False），pass 2
+    # 統一補 edges。理由：file glob alphabetical 順序可能讓 iros/ 在 topics/ 前
+    # 處理，IRO ingest 時 topic 尚未進 brain，edge 建不起來。
+    ingested: list[tuple[str, int, str, dict[str, Any]]] = []
     for md_path in sorted(root_path.glob(glob)):
         if not md_path.is_file():
             continue
-        # 任何路徑片段命中 skip_parts 就跳過
         rel_parts = md_path.relative_to(root_path).parts
         if any(part in skip_parts for part in rel_parts):
             continue
         if md_path.name in skip_files:
             continue
+        # Pass 1: put_page only（不建 edges，避免目標 page 還沒 ingest）
         try:
+            # Re-parse here so we can keep frontmatter for pass 2
+            text = md_path.read_text(encoding="utf-8")
+            fm, body = _split_frontmatter(text)
+            if not fm:
+                if strict:
+                    raise ValueError(f"{md_path} has no frontmatter")
+                continue
+            et = fm.get("entity_type") or _infer_entity_type_from_path(md_path)
+            if et is None or et not in ENTITY_SCHEMAS:
+                if strict:
+                    raise ValueError(f"{md_path} cannot infer entity_type")
+                continue
             page_id = ingest_markdown_file(
-                conn, md_path, tenant_id=tenant_id,
+                conn, md_path, tenant_id=tenant_id, auto_link_edges=False,
+            )
+            # Re-read normalized fm for pass 2 (avoid re-normalize)
+            fm_for_norm = {k: v for k, v in fm.items() if k != "entity_type"}
+            fm_clean = normalize_frontmatter(fm_for_norm, et)
+            ingested.append((str(md_path), page_id, et, fm_clean))
+            results[str(md_path)] = page_id
+        except Exception:
+            if strict:
+                raise
+            continue
+
+    # Pass 2: 補建所有 ingested pages 的 edges（此時所有 target pages 已存在）
+    for _path, page_id, et, fm_clean in ingested:
+        try:
+            _auto_create_edges_for_page(
+                conn, page_id, et, fm_clean, tenant_id=tenant_id,
             )
         except Exception:
             if strict:
                 raise
             continue
-        results[str(md_path)] = page_id
+
     return results
 
 
