@@ -4,28 +4,37 @@ MVP v0.1 Phase 3 原本 4 個 tools 全部沒處理 IRO 建立，導致 walkthro
 I1（核心 topic → IRO → Action 鏈）對 lealea 5364 出 9/9 fail（見
 ``docs/walkthroughs/lealea-5364-phase3.md`` §5.385 + §7 R3 backlog #2）。
 
-本模組補上 ``link_topic_to_iro`` — 對既有 topic 建立 IRO entity + ``topic_has_iro``
+本模組提供 ``link_topic_to_iro`` — 對既有 topic 建立 IRO entity + ``topic_has_iro``
 typed edge，雙寫到（a）per-client markdown filesystem（tool 3
-``_collect_scored_topics`` 抓 ``entities/topics/<slug>/iro/*.md``），與（b）brain
+``_collect_scored_topics`` 抓 ``entities/topics/<slug>/iro/*.md``）與（b）brain
 SQLite（IRO entity page + 對應 edge），讓兩條 I1 路徑同時收斂。
 
-設計選項採 Option 1（獨立 tool，純粹、可組合）— 不修 ``score_topic_dual_axis``
-語意，顧問評分完成後再決定何時建 IRO。
+R4d / R4e refactor（CLAUDE.md §8 decisions log）：
 
-phase3.py 已 452 行（接近 CLAUDE.md §4.6.4 硬門檻 500），新 tool 拆此檔。
+    - 拆 helpers 進 ``iro_helpers.py``，本檔聚焦 tool 主流程，符合 §4.6.1 軟門檻
+    - Timeline 寫入改走 ``brain.timeline.append_dual`` — 一個 helper 同時寫 DB
+      與 IRO markdown body 的 ``## Timeline`` 區段（之前 IRO 只進 DB，沒 MD trail）
+    - Idempotency primary key 改為 IRO 自身的 ``slug``（caller 可顯式指定 `slug`
+      參數；不指定則 deterministic gen from (topic, type, name)）。原
+      ``_iro_short_hash`` 仍保留，但只當 slug 生成器，不再是 idempotency key。
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
-import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, Optional
 
 from pydantic import BaseModel
 
+from susr.brain.timeline import append_dual
+from susr.mcp.tools.iro_helpers import (
+    build_iro_body,
+    generate_iro_slug,
+    iro_short_hash,  # noqa: F401 — re-exported for backward-compat callers
+    now_iso,
+    read_md,
+    write_md,
+)
 from susr.workspace import find_client_workspace
 
 # Pydantic Literal 用 Title case 對應 IroFrontmatter schema（brain/entities.py 第 133 行）。
@@ -40,44 +49,6 @@ IroCategory = Literal[
     "operational", "supply_chain", "market", "technology",
 ]
 
-_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", re.DOTALL)
-
-
-def _read_md(path: Path) -> tuple[dict, str]:
-    """讀 markdown，回 (frontmatter dict, body)。檔案不存在 → ({}, "")."""
-    if not path.exists():
-        return {}, ""
-    text = path.read_text(encoding="utf-8")
-    m = _FRONTMATTER_RE.match(text)
-    if not m:
-        return {}, text
-    import yaml  # type: ignore
-
-    try:
-        fm = yaml.safe_load(m.group(1)) or {}
-    except yaml.YAMLError:
-        fm = {}
-    return fm, m.group(2) or ""
-
-
-def _write_md(path: Path, frontmatter: dict, body: str) -> None:
-    """寫 markdown，附 YAML frontmatter。父目錄不存在會自動建。"""
-    import yaml  # type: ignore
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    serialized = yaml.safe_dump(frontmatter, allow_unicode=True, sort_keys=False)
-    path.write_text(f"---\n{serialized}---\n\n{body.lstrip()}", encoding="utf-8")
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-def _iro_short_hash(topic_slug: str, iro_type_title: str, iro_name: str) -> str:
-    """deterministic 8-char hash，作為 IRO slug 後綴 → 同 (topic, type, name) 永遠同 slug。"""
-    h = hashlib.sha256(f"{topic_slug}|{iro_type_title}|{iro_name}".encode("utf-8"))
-    return h.hexdigest()[:8]
-
 
 # ---------- Pydantic models ----------
 
@@ -86,13 +57,13 @@ class LinkedIroResult(BaseModel):
     """``link_topic_to_iro`` 回傳結構。
 
     Attributes:
-        iro_slug: deterministic 產出的 IRO slug（per-client unique）。
+        iro_slug: IRO slug（per-client unique）—— R4e idempotency 主鍵。
         page_file: IRO entity 的 markdown 絕對路徑（filesystem source of truth）。
         topic_slug: 連結到的 topic slug。
         iro_type: 'Impact' / 'Risk' / 'Opportunity'（已 normalize 為 Title case）。
         brain_page_id: brain SQLite ``pages.id``（同 iro_slug + tenant_id unique）。
         edge_id: ``links`` 表的 row id（``topic_has_iro`` typed edge）。
-        timeline_entry_id: brain ``timeline_entries`` 表的 row id。
+        timeline_entry_id: brain ``timeline_entries`` 表的 row id（dual-write 後）。
         created: 此次呼叫是否真的新建（False → idempotent no-op，回既有 IRO）。
     """
 
@@ -106,13 +77,13 @@ class LinkedIroResult(BaseModel):
     created: bool
 
 
-# ---------- helpers ----------
+# ---------- internal helpers ----------
 
 
 def _find_topic_brain_page(engine, topic_slug: str):
-    """brain 內 topic page 的 slug 可能是 ``<slug>`` 或 ``topics/<slug>``（測試用兩種）。
+    """brain 內 topic page 的 slug 可能是 ``<slug>`` 或 ``topics/<slug>``（兩種慣例並存）。
 
-    回 ``Page`` 或 None；同時回傳實際用到的 brain slug，供後續 ``engine.link()`` 用。
+    回 ``(Page, brain_slug)`` 或 ``(None, None)``，供後續 ``engine.link()`` 使用。
     """
     page = engine.get_page(topic_slug)
     if page is not None:
@@ -124,21 +95,16 @@ def _find_topic_brain_page(engine, topic_slug: str):
     return None, None
 
 
-def _build_iro_body(
-    iro_slug: str, iro_type_title: str, iro_name: str, description: str,
-    *, category: Optional[str], time_horizon: str,
-    financial_magnitude: Optional[float], topic_slug: str,
-) -> str:
-    """組 IRO entity markdown body（compiled_truth）。"""
-    return (
-        f"# {iro_type_title}: {iro_name}\n\n"
-        f"- 議題：`{topic_slug}`\n"
-        f"- 類型：{iro_type_title}\n"
-        f"- 分類：{category or '—'}\n"
-        f"- 時間軸：{time_horizon}\n"
-        f"- 財務量級：{financial_magnitude if financial_magnitude is not None else '—'}\n\n"
-        f"## 描述\n\n{description.strip() or '_<待顧問補充>_'}\n"
-    )
+def _resolve_iro_brain_slug(engine, iro_slug: str):
+    """同 ``_find_topic_brain_page`` 但對 IRO：先試 unqualified，再試 ``iros/`` 前綴。"""
+    page = engine.get_page(iro_slug)
+    if page is not None:
+        return page, iro_slug
+    prefixed = f"iros/{iro_slug}"
+    page = engine.get_page(prefixed)
+    if page is not None:
+        return page, prefixed
+    return None, None
 
 
 # ---------- main tool ----------
@@ -154,6 +120,7 @@ def link_topic_to_iro(
     time_horizon: Literal["S", "M", "L"] = "M",
     financial_magnitude: float = 3.0,
     *,
+    slug: Optional[str] = None,
     actor: str = "consultant",
 ) -> LinkedIroResult:
     """Phase 3 補充工具 — 對既有 topic 建立 IRO entity + ``topic_has_iro`` edge。
@@ -165,10 +132,12 @@ def link_topic_to_iro(
         - filesystem：``entities/topics/<topic_slug>/iro/<iro_slug>.md``
           （``generate_materiality_matrix`` 內建 I1 check 在掃此目錄）
         - brain DB：``iro`` entity page + ``topic_has_iro`` typed edge
-          （``invariants.assert_i1_core_topic_coverage`` 在掃 ``v_core_topic_action_coverage``）
+          + timeline_entries row（via ``brain.timeline.append_dual``）
 
-    Idempotency：``iro_slug = <topic_slug>-<iro_type>-<sha8>``；同 (topic, type, name)
-    重複呼叫不複製 — 回既有 IRO 與 ``created=False``。
+    Idempotency（R4e）：``iro_slug`` 為主鍵 — caller 可顯式給 ``slug=...``
+    完全控制；不給時 deterministic 自動生成
+    ``<topic_slug>-<iro_type>-<sha8>``。同 slug 重複呼叫不複製 — 回既有
+    IRO 與 ``created=False``。
 
     Args:
         client_slug: per-client workspace 目錄名稱。
@@ -180,6 +149,9 @@ def link_topic_to_iro(
             supply_chain / market / technology），對應 TCFD + CSRD 常用枚舉。
         time_horizon: 'S' / 'M' / 'L'（short / medium / long term）。
         financial_magnitude: 0-5 估值（IroFrontmatter schema 限定 float），預設 3.0。
+        slug: 顯式指定 IRO slug（idempotency primary key）— 顧問若想用自家
+            naming convention（如 ESG-IRO-2025-001）就傳這個。未指定時自動
+            從 (topic, type, name) 生成 deterministic slug。
         actor: 寫入 timeline 的 actor 欄位（"consultant" / "consultant:王" / agent id）。
 
     Returns:
@@ -221,51 +193,53 @@ def link_topic_to_iro(
                 "ingest the topic page first (engine.put_page entity_type='topic')"
             )
 
-        short_hash = _iro_short_hash(topic_slug, iro_type_title, iro_name)
-        iro_slug = f"{topic_slug}-{iro_type.lower()}-{short_hash}"
+        iro_slug = generate_iro_slug(
+            topic_slug, iro_type, iro_name, explicit_slug=slug,
+        )
         iro_brain_slug = f"iros/{iro_slug}"
+        iro_md_path = (
+            client_path / "entities" / "topics" / topic_slug / "iro" / f"{iro_slug}.md"
+        )
 
-        iro_md_path = client_path / "entities" / "topics" / topic_slug / "iro" / f"{iro_slug}.md"
-
-        # Idempotency — 看 brain DB（filesystem 可能被外部刪，brain 是 ground truth）。
-        existing = engine.get_page(iro_brain_slug)
-        if existing is not None:
-            # 已建過：不複寫、不重 link，回既有結構。
+        # ── R4e Idempotency：以 slug 為主鍵查 brain DB（filesystem 可能被外部刪，
+        # brain 是 ground truth）。同 slug 重複呼叫 → 回既有結構不複寫。──
+        existing_page, _ = _resolve_iro_brain_slug(engine, iro_brain_slug)
+        if existing_page is not None:
             row = engine.conn.execute(
                 "SELECT id FROM links WHERE src_page_id = ? AND dst_page_id = ? "
                 "AND edge_type = 'topic_has_iro'",
-                [topic_page.id, existing.id],
+                [topic_page.id, existing_page.id],
             ).fetchone()
             existing_edge_id = int(row[0]) if row else 0
             tl_row = engine.conn.execute(
                 "SELECT id FROM timeline_entries WHERE page_id = ? "
                 "ORDER BY id DESC LIMIT 1",
-                [existing.id],
+                [existing_page.id],
             ).fetchone()
             existing_tl_id = int(tl_row[0]) if tl_row else 0
             return LinkedIroResult(
                 iro_slug=iro_slug, page_file=str(iro_md_path),
                 topic_slug=topic_slug, iro_type=iro_type_title,  # type: ignore[arg-type]
-                brain_page_id=existing.id, edge_id=existing_edge_id,
+                brain_page_id=existing_page.id, edge_id=existing_edge_id,
                 timeline_entry_id=existing_tl_id, created=False,
             )
 
-        # ── 1. 寫 IRO markdown（filesystem source of truth）──
+        # ── 1. 組 IRO entity markdown body（filesystem source of truth）──
         iro_fm = {
             "slug": iro_slug, "topic_slug": topic_slug, "type": iro_type_title,
             "category": category or "operational",
             "time_horizon": time_horizon,
             "financial_magnitude": float(financial_magnitude),
-            "iro_name": iro_name, "created_at": _now(), "created_by": actor,
+            "iro_name": iro_name, "created_at": now_iso(), "created_by": actor,
         }
-        body = _build_iro_body(
+        body = build_iro_body(
             iro_slug, iro_type_title, iro_name, description,
             category=category, time_horizon=time_horizon,
             financial_magnitude=float(financial_magnitude), topic_slug=topic_slug,
         )
-        _write_md(iro_md_path, iro_fm, body)
 
-        # ── 2. 寫 brain DB（iro entity page）──
+        # ── 2. 寫 brain DB（iro entity page）— 必須在 timeline append_dual 之前，
+        # 否則 page_slug lookup 拿不到 page.id。──
         # IroFrontmatter schema：slug + topic_slug + type + category + time_horizon
         # + financial_magnitude；其他 markdown frontmatter 額外欄位 brain 不收，
         # 因為 validate_frontmatter 對 extra fields 寬鬆但會記到 entity_attributes。
@@ -285,7 +259,7 @@ def link_topic_to_iro(
         # ── 3. 寫 topic_has_iro typed edge ──
         edge_id = engine.link(topic_brain_slug, "topic_has_iro", iro_brain_slug)
 
-        # ── 4. 寫 timeline_entries（brain DB；action_type='ingest' 表第一次建立）──
+        # ── 4. 統一寫 timeline — brain DB + MD body 同步（R4d append_dual）──
         payload = {
             "topic_slug": topic_slug, "iro_slug": iro_slug,
             "iro_type": iro_type_title, "iro_name": iro_name,
@@ -293,19 +267,13 @@ def link_topic_to_iro(
             "financial_magnitude": float(financial_magnitude),
             "tool": "link_topic_to_iro",
         }
-        cur = engine.conn.execute(
-            """
-            INSERT INTO timeline_entries
-                (page_id, action_type, source_ref, actor, payload)
-            VALUES (?, 'ingest', ?, ?, ?)
-            """,
-            [
-                brain_page_id, str(iro_md_path), actor,
-                json.dumps(payload, ensure_ascii=False, sort_keys=True),
-            ],
+        tl_id, body = append_dual(
+            engine, iro_brain_slug, "ingest", payload, actor,
+            body=body, source_ref=str(iro_md_path),
         )
-        engine.conn.commit()
-        tl_id = int(cur.lastrowid or 0)
+
+        # ── 5. 落地 markdown（body 已含同步 timeline 行）──
+        write_md(iro_md_path, iro_fm, body)
 
         return LinkedIroResult(
             iro_slug=iro_slug, page_file=str(iro_md_path),
@@ -323,6 +291,13 @@ def link_topic_to_iro(
 def register(server) -> None:  # noqa: ANN001
     """Bind ``link_topic_to_iro`` to a FastMCP server instance."""
     server.tool()(link_topic_to_iro)
+
+
+# Re-export read_md / write_md so existing callers that imported from iro
+# top-level don't break (defensive — these aren't part of the public API
+# but some test scaffolds reach in).
+_read_md = read_md  # backward-compat alias
+_write_md = write_md  # backward-compat alias
 
 
 __all__ = [

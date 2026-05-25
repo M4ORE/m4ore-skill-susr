@@ -405,3 +405,49 @@ def test_i1b_passes_after_link_action(tmp_client_workspace) -> None:
         )
     finally:
         engine.close()
+
+
+# ---------------------------------------------------------------------------
+# R4d — Action markdown body should contain ## Timeline section
+# ---------------------------------------------------------------------------
+
+
+def test_link_iro_to_action_writes_md_timeline(tmp_client_workspace) -> None:
+    """R4d 驗證：Action markdown body 應含 '## Timeline' + action=ingest 行 (dual write)。"""
+    ws = _ws_path(tmp_client_workspace)
+    iro_slug = _setup_topic_and_iro(
+        ws, "E1-climate", "氣候變遷", "碳費", "risk",
+    )
+
+    r = link_iro_to_action(
+        iro_slug=iro_slug,
+        action_name="2025 能耗減量計畫",
+        description="冷氣機汰換 + 智慧電表佈建",
+        client_slug="test-client",
+        project_slug="2025-sr",
+        budget=2_500_000.0,
+        actor="consultant:李",
+    )
+    action_md = Path(r.page_file)
+    text = action_md.read_text(encoding="utf-8")
+    # MD body 含 timeline section + 行
+    assert "## Timeline" in text
+    assert "action=ingest" in text
+    assert "actor=consultant:李" in text
+    # 同步 DB 內容
+    engine = BrainEngine.open(
+        str(ws / ".susr" / "db.sqlite"), load_sqlite_vec=False,
+    )
+    try:
+        row = engine.conn.execute(
+            "SELECT actor, payload FROM timeline_entries WHERE id=?",
+            [r.timeline_entry_id],
+        ).fetchone()
+        assert row is not None
+        actor_db, payload_db = row
+        assert actor_db == "consultant:李"
+        decoded = json.loads(payload_db)
+        assert decoded["tool"] == "link_iro_to_action"
+        assert decoded["action_name"] == "2025 能耗減量計畫"
+    finally:
+        engine.close()

@@ -15,7 +15,6 @@ Idempotency：``action_slug = <iro_slug>-action-<sha8(name)>``。重複呼叫不
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,6 +22,7 @@ from typing import Optional  # noqa: F401 — kept for explicit type hints below
 
 from pydantic import BaseModel
 
+from susr.brain.timeline import append_dual
 from susr.workspace import find_client_workspace
 
 def _write_md(path: Path, frontmatter: dict, body: str) -> None:
@@ -224,7 +224,7 @@ def link_iro_to_action(
                 created=False,
             )
 
-        # ── 1. 寫 Action markdown（filesystem source of truth） ──
+        # ── 1. 組 Action markdown body（filesystem source of truth） ──
         # ActionFrontmatter 需要：chapter_slug / iro_addressed / budget / progress_pct
         # / owner_department / period（全 required）— 給 fallback 預設值避 schema fail。
         # chapter_slug 為強制欄位，Phase 5 規劃通常 chapter 已存在；
@@ -248,9 +248,9 @@ def link_iro_to_action(
             iro_slug=iro_slug_short, budget=budget, progress_pct=progress_pct,
             owner_department=owner_department, period=period,
         )
-        _write_md(action_md_path, action_fm, body)
 
-        # ── 2. 寫 brain DB（action entity page） ──
+        # ── 2. 寫 brain DB（action entity page）— 須在 timeline append_dual 之前
+        # 否則 page_slug lookup 拿不到 page.id。──
         brain_fm = {
             "slug": action_slug,
             "chapter_slug": chapter_slug_default,
@@ -273,7 +273,7 @@ def link_iro_to_action(
         # ── 3. 寫 iro_addressed_by typed edge ──
         edge_id = engine.link(iro_brain_slug, "iro_addressed_by", action_brain_slug)
 
-        # ── 4. 寫 timeline_entries（brain DB） ──
+        # ── 4. 統一寫 timeline（R4d append_dual — DB + MD body 同 ts/actor/payload） ──
         payload = {
             "iro_slug": iro_slug_short,
             "action_slug": action_slug,
@@ -285,21 +285,13 @@ def link_iro_to_action(
             "period": period,
             "tool": "link_iro_to_action",
         }
-        cur = engine.conn.execute(
-            """
-            INSERT INTO timeline_entries
-                (page_id, action_type, source_ref, actor, payload)
-            VALUES (?, 'ingest', ?, ?, ?)
-            """,
-            [
-                brain_page_id,
-                str(action_md_path),
-                actor,
-                json.dumps(payload, ensure_ascii=False, sort_keys=True),
-            ],
+        tl_id, body = append_dual(
+            engine, action_brain_slug, "ingest", payload, actor,
+            body=body, source_ref=str(action_md_path),
         )
-        engine.conn.commit()
-        tl_id = int(cur.lastrowid or 0)
+
+        # ── 5. 落地 markdown（body 已含 timeline 行）──
+        _write_md(action_md_path, action_fm, body)
 
         return LinkedActionResult(
             action_slug=action_slug,

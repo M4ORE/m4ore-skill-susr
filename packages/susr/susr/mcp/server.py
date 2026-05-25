@@ -60,6 +60,7 @@ def create_server() -> "FastMCP":
     # module top-level, which is how each tool ends up bound to `server`.
     from susr.mcp.tools import action as _action
     from susr.mcp.tools import iro as _iro
+    from susr.mcp.tools import kpi as _kpi
     from susr.mcp.tools import phase3 as _phase3
     from susr.mcp.tools import phase6 as _phase6
     from susr.mcp.tools import phase7 as _phase7
@@ -70,6 +71,7 @@ def create_server() -> "FastMCP":
     _action.register(server)
     _phase7.register(server)
     _phase6.register(server)
+    _kpi.register(server)
     _workspace.register(server)
 
     return server

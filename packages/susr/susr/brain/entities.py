@@ -187,7 +187,13 @@ class TargetFrontmatter(_EntityBase):
 
 
 class KpiFrontmatter(_EntityBase):
-    """Spec §2.3 row 11."""
+    """Spec §2.3 row 11.
+
+    ``priority`` (R6+ Agent C 加) — lower = more important，預設 100。Critical KPI
+    （E1 範疇 1+2 排放、E2 水資源、S1 工安）設 10-30 讓它們在 ``list_top_kpis``
+    優先浮上來，與 ``latest_value`` 數值大小或 YoY delta 無關。schema-level optional
+    保留向下相容（spec §2.3 row 11 原本只 6 必填）。
+    """
 
     topic_slug: str
     name: str
@@ -195,6 +201,7 @@ class KpiFrontmatter(_EntityBase):
     framework_refs: Sequence[str]
     boundary: str
     formula: str
+    priority: int = 100
 
 
 class DatapointFrontmatter(_EntityBase):

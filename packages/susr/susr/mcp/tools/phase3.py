@@ -29,7 +29,6 @@ emit warning 收進 ``MaterialityMatrix.tier_overrides``。
 
 from __future__ import annotations
 
-import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -131,17 +130,22 @@ def resolve_materiality_tier(
 
 
 def _append_timeline_md(body: str, action: str, payload: dict, actor: str) -> tuple[str, int]:
-    """Append a timeline_entry line; return (new_body, synthetic entry id)."""
-    marker = "## Timeline"
-    body = body or ""
-    if marker not in body:
-        body = body.rstrip() + f"\n\n---\n\n{marker}\n\n"
-    new_id = len(re.findall(r"^- \[", body, re.MULTILINE)) + 1
-    line = (
-        f"- [{_now()}] action={action} actor={actor} payload="
-        f"{json.dumps(payload, ensure_ascii=False)}\n"
-    )
-    return body + line, new_id
+    """Append a timeline_entry line to a markdown body; return (new_body, synthetic id).
+
+    R4d 收斂後本函式為 ``brain.timeline.append_timeline_md_body`` 的薄 wrapper —
+    歷史 caller（``score_topic_dual_axis`` / ``stakeholder_engagement_helper``）
+    仍可直接用此名稱不需大改。實際的字串格式（``- [ts] action=… actor=… payload=…``）
+    由 brain 端統一定義，確保 ``iro.py`` / ``action.py`` / ``phase3.py`` 三處
+    MD body trail 與 ``timeline_entries`` table 內容對齊。
+
+    回傳的 synthetic id 是 1-based MD line 計數（與舊行為相容）；若 phase3 工具
+    未來改走 brain DB（P1a backlog），可直接切換到 ``append_dual``。
+    """
+    # Local import — keep the timeline module dependency lazy so the
+    # phase3 import path isn't slowed by sqlite3 chain at cold-start.
+    from susr.brain.timeline import append_timeline_md_body
+
+    return append_timeline_md_body(body, action, payload, actor)
 
 
 # ---------- Tool 1: search_topics_universe ----------

@@ -413,3 +413,83 @@ def test_link_topic_to_iro_unknown_type_raises(tmp_client_workspace) -> None:
             iro_type="threat",  # type: ignore[arg-type]
             iro_name="x",
         )
+
+
+# ---------------------------------------------------------------------------
+# R4e — slug-based idempotency
+# ---------------------------------------------------------------------------
+
+
+def test_link_topic_to_iro_explicit_slug_used(tmp_client_workspace) -> None:
+    """caller 顯式給 slug → IRO 使用該 slug（去除非 ascii 後 kebab）。"""
+    ws = _ws_path(tmp_client_workspace)
+    _setup_topic(ws, "E1-climate", "氣候變遷")
+
+    r = link_topic_to_iro(
+        client_slug="test-client",
+        topic_slug="E1-climate",
+        iro_type="risk",
+        iro_name="碳費",
+        slug="ESG-IRO-2025-001",
+    )
+    # Slug cleanup: 顯式 slug 走 kebab-case sanitiser → lower-case
+    assert r.iro_slug == "esg-iro-2025-001"
+
+
+def test_link_topic_to_iro_explicit_slug_idempotent(tmp_client_workspace) -> None:
+    """同 explicit slug 重複呼叫 → 第二次 created=False，即使 iro_name 不同。"""
+    ws = _ws_path(tmp_client_workspace)
+    _setup_topic(ws, "E1-climate", "氣候變遷")
+
+    r1 = link_topic_to_iro(
+        client_slug="test-client", topic_slug="E1-climate",
+        iro_type="risk", iro_name="碳費",
+        slug="esg-iro-2025-001",
+    )
+    # 不同 iro_name + 同 slug → 仍然 idempotent
+    r2 = link_topic_to_iro(
+        client_slug="test-client", topic_slug="E1-climate",
+        iro_type="risk", iro_name="不一樣的名字（不應建新 IRO）",
+        slug="esg-iro-2025-001",
+    )
+    assert r1.created is True
+    assert r2.created is False
+    assert r1.iro_slug == r2.iro_slug == "esg-iro-2025-001"
+    assert r1.brain_page_id == r2.brain_page_id
+
+
+def test_link_topic_to_iro_writes_md_timeline(tmp_client_workspace) -> None:
+    """R4d 驗證：IRO markdown body 應含 '## Timeline' + action=ingest 行 (dual write)。"""
+    ws = _ws_path(tmp_client_workspace)
+    _setup_topic(ws, "E1-climate", "氣候變遷")
+
+    r = link_topic_to_iro(
+        client_slug="test-client", topic_slug="E1-climate",
+        iro_type="risk", iro_name="碳費",
+        description="台灣 2025+ 碳費分階段加徵",
+        actor="consultant:王",
+    )
+    iro_md = Path(r.page_file)
+    text = iro_md.read_text(encoding="utf-8")
+    # MD body 含 timeline section + 行
+    assert "## Timeline" in text
+    assert "action=ingest" in text
+    assert "actor=consultant:王" in text
+    # DB 同步 — payload 一致
+    engine = BrainEngine.open(
+        str(ws / ".susr" / "db.sqlite"), load_sqlite_vec=False,
+    )
+    try:
+        row = engine.conn.execute(
+            "SELECT actor, payload FROM timeline_entries WHERE id=?",
+            [r.timeline_entry_id],
+        ).fetchone()
+        assert row is not None
+        actor_db, payload_db = row
+        assert actor_db == "consultant:王"
+        import json
+        decoded = json.loads(payload_db)
+        assert decoded["tool"] == "link_topic_to_iro"
+        assert decoded["iro_name"] == "碳費"
+    finally:
+        engine.close()
