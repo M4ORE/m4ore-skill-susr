@@ -1,0 +1,42 @@
+name: Tests
+
+# Run tests on pushes to main and on pull requests targeting main.
+# Keeps feedback fast for both direct commits and incoming PRs.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same ref when a new commit arrives.
+# Saves CI minutes during rapid iteration (force-pushes, fixup commits, PR updates).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Fetch the repo at the triggering commit.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Pin Python 3.11 (stable, broad ecosystem support).
+      # Built-in cache keyed on tests/requirements.txt avoids re-downloading
+      # pip wheels across runs.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: tests/requirements.txt
+
+      # Install test dependencies (pytest + pyyaml, etc.).
+      - name: Install dependencies
+        run: pip install -r tests/requirements.txt
+
+      # Run the full test suite. --tb=short keeps tracebacks compact so
+      # failures surface cleanly in the GitHub Actions log annotations.
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short

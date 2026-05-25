@@ -1,0 +1,205 @@
+# Layer 2 scenario golden fixture — examples/lealea-5364/ 各 phase 的核心 invariant
+#
+# 設計原則：
+#   - assertion 鎖「ESG domain invariant」（必須存在的概念、結構、方法論）
+#   - 不鎖具體日期、具體金額、特定行銷詞 — 重做 example 時不該誤判 regression
+#   - must_contain = 必須全有；must_contain_any = 至少一個；must_not_contain = 全不可
+#   - min_lines = 防止 example 被意外截斷或抽空
+#
+# 每份檔案的 description 解釋這份 expectation 在守護什麼 invariant。
+
+phase1:
+  file: phase1-scoping.md
+  description: Phase 1 必須鎖定「公司基本資料 + 報告邊界 + 適用標準 + 報告期間 + 強制章節 + 責任分工 + 假設限制」七大要素；旅館業個案必須揭露營運控制法與委託經營邊界爭議
+  must_contain:
+    - "力麗觀光"
+    - "5364"
+    - "報告邊界"
+    - "營運控制法"
+    - "適用標準"
+    - "GRI"
+    - "TCFD"
+    - "金管會"
+    - "雙重重大性"
+    - "責任分工"
+    - "假設"
+  must_contain_any:
+    - "委託經營"
+    - "明池"
+    - "棲蘭"
+  min_lines: 80
+
+phase2:
+  file: phase2-research-log.md
+  description: Phase 2 research log 必須含 peer benchmark、法規最新版、排放因子三大研究任務；旅館業 peer 必須含同業上市公司；排放因子必須含台電電力係數與 Scope 1 固定燃燒因子
+  must_contain:
+    - "Peer"
+    - "GRI"
+    - "TCFD"
+    - "SASB"
+    - "金管會"
+    - "ISSB"
+    - "排放因子"
+    - "Scope 2"
+    - "Scope 3"
+    - "kg CO2e/kWh"
+    - "環境部"
+  must_contain_any:
+    - "晶華"
+    - "雲品"
+    - "寒舍"
+    - "國賓"
+  min_lines: 100
+
+phase3:
+  file: phase3-materiality.md
+  description: Phase 3 必須採雙重重大性方法（Impact × Financial 雙軸），含利害關係人盤點 + 議合方法 + 議題池（E/S/G 三軸）+ 矩陣 + IRO 對應章節；至少含旅館業核心議題（食安、氣候、能源、隱私）
+  must_contain:
+    - "雙重重大性"
+    - "Impact"
+    - "Financial"
+    - "利害關係人"
+    - "議合"
+    - "議題池"
+    - "矩陣"
+    - "食品安全"
+    - "氣候變遷"
+    - "能源管理"
+    - "顧客隱私"
+    - "IRO"
+  must_not_contain:
+    - "單向 impact materiality"
+  min_lines: 120
+
+phase4:
+  file: phase4-xlsx-skeleton.md
+  description: Phase 4 xlsx skeleton 必須含 GHG Scope 1/2/3 三範疇分 sheet、Scope 2 雙軌（地點/市場基礎）、水/廢棄物/HR/職安食安/客戶 sheet；GHG 計算必須引用排放因子；旅館業特化必須含據點 master 與委託經營 Scenario 雙軌
+  must_contain:
+    - "Scope 1"
+    - "Scope 2"
+    - "Scope 3"
+    - "GHG"
+    - "GRI"
+    - "SASB"
+    - "排放因子"
+    - "地點基礎"
+    - "市場基礎"
+    - "Scenario"
+    - "據點"
+    - "HACCP"
+    - "tCO2e"
+  must_contain_any:
+    - "GHG Protocol"
+    - "Hotels & Lodging"
+    - "SV-HL"
+  min_lines: 150
+
+phase5_chapter_skeleton:
+  file: phase5-chapter-skeleton.md
+  description: Phase 5 章節骨架必須含 7 大篇章 + 附錄，必須含 TCFD 完整章節 + 食安/隱私/在地高優先章節；必須遵循 IRO→治理→策略→行動→目標→KPI→展望 連結性公式；附錄必須含 GRI/SASB/TCFD index
+  must_contain:
+    - "IRO"
+    - "治理"
+    - "策略"
+    - "目標"
+    - "KPI"
+    - "TCFD"
+    - "食品安全"
+    - "顧客隱私"
+    - "GRI"
+    - "SASB"
+    - "雙重重大性"
+    - "誠信經營"
+    - "利害關係人"
+  must_contain_any:
+    - "未達標"
+    - "反綠色洗白"
+  min_lines: 80
+
+phase5_tcfd_sample:
+  file: phase5-tcfd-sample.md
+  description: Phase 5 TCFD 完整章節示範必須含 TCFD 4 構面（治理、策略、風險管理、指標與目標）；策略必須含情境分析（1.5°C/2°C/4°C）；目標必須有基線+時程+驗證三要素；必須有未達標誠實揭露（反綠色洗白）
+  must_contain:
+    - "TCFD"
+    - "IRO"
+    - "Impact"
+    - "Risk"
+    - "Opportunity"
+    - "治理"
+    - "策略"
+    - "風險管理"
+    - "指標"
+    - "情境分析"
+    - "1.5"
+    - "2°C"
+    - "4°C"
+    - "Scope 1"
+    - "Scope 2"
+    - "Scope 3"
+    - "基線"
+    - "未達標"
+    - "SBTi"
+  must_contain_any:
+    - "ISSB"
+    - "IFRS S2"
+  min_lines: 100
+
+phase6:
+  file: phase6-assembly-plan.md
+  description: Phase 6 組裝計畫必須含 docx/pdf/pptx 三類 sub-skill prompt 套裝；必須含依賴與 Pre-flight 檢查；必須含失敗模式 fallback；必須涵蓋投資人版與董事會版兩種簡報受眾
+  must_contain:
+    - "document-skills"
+    - "docx"
+    - "pdf"
+    - "pptx"
+    - "xlsx"
+    - "pandoc"
+    - "LibreOffice"
+    - "依賴"
+    - "失敗"
+    - "fallback"
+  must_contain_any:
+    - "投資人"
+    - "董事會"
+  min_lines: 80
+
+phase7_gap_analysis:
+  file: phase7-gap-analysis.md
+  description: Phase 7 gap analysis 必須對照試做 vs 力麗實際版；必須點出核心缺口（TCFD 缺席、Scope 1/3 缺漏、單向重大性、無第三方確信、GRI 舊版）；必須含 SOP 強項/弱項自省與合規檢查
+  must_contain:
+    - "力麗"
+    - "TCFD"
+    - "Scope 1"
+    - "Scope 3"
+    - "雙重重大性"
+    - "第三方確信"
+    - "GRI"
+    - "ISSB"
+    - "強項"
+    - "弱項"
+  must_contain_any:
+    - "單向"
+    - "缺席"
+    - "缺漏"
+    - "gap"
+    - "Gap"
+  min_lines: 100
+
+walkthrough:
+  file: walkthrough-notes.md
+  description: Walkthrough notes 必須含試做摘要表（Phase 1-7 產出對照）、SOP 串連結論、痛點清單、評等；必須誠實揭露未實機 build 的 phase 與工具依賴問題
+  must_contain:
+    - "8-Phase"
+    - "Phase 1"
+    - "Phase 7"
+    - "TCFD"
+    - "反綠色洗白"
+    - "占位符"
+    - "未達標"
+    - "委託經營"
+    - "lessons learned"
+  must_contain_any:
+    - "Poppler"
+    - "pypdf"
+    - "依賴"
+  min_lines: 60
