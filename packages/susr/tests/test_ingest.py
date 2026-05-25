@@ -670,3 +670,111 @@ def test_lealea_i2_invariant_pass_after_frameworks(tmp_db) -> None:
     assert edge_count >= 5, (
         f"expected ≥5 chapter_conforms_to edges (1 per chapter), got {edge_count}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Schema-level coerce: version field accepts YAML float/int (R3-A 精神延伸)
+# 顧問手寫 _project.md / regulation / emission_factor 常打 `version: 0.1`
+# 而非 `version: "0.1"`. Schema 嚴格 str 會在 render path 丟 fallback;
+# entities.VersionStr (BeforeValidator) 在 schema 層 coerce 解決根因.
+# ---------------------------------------------------------------------------
+
+
+def test_report_frontmatter_accepts_float_version() -> None:
+    from susr.brain.entities import ReportFrontmatter
+
+    fm = ReportFrontmatter(
+        slug="2025-sr", client_slug="acme", year=2025,
+        version=0.1, language="zh-TW",
+        framework_bundle=["GRI 2021"], status="draft",
+    )
+    assert fm.version == "0.1"
+    assert isinstance(fm.version, str)
+
+
+def test_report_frontmatter_accepts_int_version() -> None:
+    from susr.brain.entities import ReportFrontmatter
+
+    fm = ReportFrontmatter(
+        slug="2025-sr", client_slug="acme", year=2025,
+        version=1, language="zh-TW",
+        framework_bundle=["GRI 2021"], status="draft",
+    )
+    assert fm.version == "1"
+
+
+def test_report_frontmatter_quoted_string_version_unchanged() -> None:
+    """Coerce 只動 int/float, 既有 str caller 不受影響."""
+    from susr.brain.entities import ReportFrontmatter
+
+    fm = ReportFrontmatter(
+        slug="2025-sr", client_slug="acme", year=2025,
+        version="0.1.0-beta", language="zh-TW",
+        framework_bundle=["GRI 2021"], status="draft",
+    )
+    assert fm.version == "0.1.0-beta"
+
+
+def test_report_frontmatter_rejects_invalid_version_types() -> None:
+    """Coerce 只接 int/float; dict/list 仍須 raise."""
+    from pydantic import ValidationError as _VE
+    from susr.brain.entities import ReportFrontmatter
+
+    for bad in ({"v": 0.1}, [0, 1], True):  # bool 不應被誤吸（is bool 排除）
+        with pytest.raises(_VE):
+            ReportFrontmatter(
+                slug="2025-sr", client_slug="acme", year=2025,
+                version=bad, language="zh-TW",
+                framework_bundle=["GRI 2021"], status="draft",
+            )
+
+
+def test_regulation_and_emission_factor_also_accept_float_version() -> None:
+    from susr.brain.entities import (
+        EmissionFactorFrontmatter,
+        FrameworkFrontmatter,
+        RegulationFrontmatter,
+    )
+
+    reg = RegulationFrontmatter(
+        slug="r1", jurisdiction="TW", authority="FSC",
+        version=2.0, effective_from="2026-01-01",
+        applies_to_industries=["all"],
+    )
+    assert reg.version == "2.0"
+
+    ef = EmissionFactorFrontmatter(
+        slug="ef1", category="electricity", region="TW", source="EPA",
+        version=2024, value=0.495, unit="kgCO2e/kWh",
+        effective_from="2024-01-01",
+    )
+    assert ef.version == "2024"
+
+    fw = FrameworkFrontmatter(
+        slug="gri", version=2021,
+        disclosures=["GRI 2-1"], is_mandatory_in=["TW"],
+    )
+    assert fw.version == "2021"
+
+
+def test_lealea_project_md_loads_with_float_version(lealea_root: Path) -> None:
+    """End-to-end: lealea-5364/projects/2025-sr/_project.md (version: 0.1)
+    可被 ReportFrontmatter 直接 validate, 不再走 render_docx_simple fallback layer 3."""
+    import yaml
+    from susr.brain.entities import ReportFrontmatter
+
+    project_md = lealea_root / "projects" / "2025-sustainability-report" / "_project.md"
+    text = project_md.read_text(encoding="utf-8")
+    # Strip YAML frontmatter block (between --- markers)
+    parts = text.split("---", 2)
+    assert len(parts) >= 3, "_project.md 缺 YAML frontmatter"
+    fm_dict = yaml.safe_load(parts[1])
+    # Keep only fields known to ReportFrontmatter — _project.md may carry
+    # extras (period_start / mops_filing_no) that the schema doesn't model
+    known = {"slug", "entity_type", "client_slug", "year", "version",
+             "language", "framework_bundle", "status", "xbrl_concept"}
+    fm_dict = {k: v for k, v in fm_dict.items() if k in known}
+    fm_dict.pop("entity_type", None)  # schema 不收 entity_type
+    fm = ReportFrontmatter(**fm_dict)
+    assert isinstance(fm.version, str)
+    assert fm.version == "0.1"

@@ -13,9 +13,25 @@ R2: fill each model with the required + optional fields from spec §2.3 table.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Sequence
+from typing import Annotated, Any, Literal, Optional, Sequence
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, BeforeValidator, Field, ValidationError
+
+
+def _coerce_str(v: Any) -> Any:
+    """Accept int/float for version-like fields and coerce to str.
+
+    顧問手寫 ``_project.md`` 常打 ``version: 0.1`` (YAML float) 而非
+    ``version: "0.1"``; schema 嚴格 ``str`` 會在 render path 丟 fallback。
+    對齊 R3-A ingest tolerance 精神, 在 schema 層讓 programmatic caller
+    也能享受同樣的寬容; 真正 invalid 值 (dict / list) 仍 raise.
+    """
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return str(v)
+    return v
+
+
+VersionStr = Annotated[str, BeforeValidator(_coerce_str)]
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +113,7 @@ class ReportFrontmatter(_EntityBase):
 
     client_slug: str
     year: int
-    version: str
+    version: VersionStr
     language: str
     framework_bundle: Sequence[str]
     status: str
@@ -222,7 +238,7 @@ class RegulationFrontmatter(_EntityBase):
 
     jurisdiction: str
     authority: str
-    version: str
+    version: VersionStr
     effective_from: str
     effective_to: Optional[str] = None
     applies_to_industries: Sequence[str]
@@ -234,7 +250,7 @@ class EmissionFactorFrontmatter(_EntityBase):
     category: str
     region: str
     source: str
-    version: str
+    version: VersionStr
     value: float
     unit: str
     effective_from: str
@@ -243,7 +259,7 @@ class EmissionFactorFrontmatter(_EntityBase):
 class FrameworkFrontmatter(_EntityBase):
     """Spec §2.3 row 15."""
 
-    version: str
+    version: VersionStr
     disclosures: Sequence[str]
     is_mandatory_in: Sequence[str]
 
