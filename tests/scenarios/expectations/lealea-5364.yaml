@@ -590,3 +590,53 @@ projects_2025_pdf_extract:
     - "無第三方"
     - "未經外部"
   min_lines: 60
+
+# ---------------------------------------------------------------------------
+# R6 補強：entities/iros/ — IRO entity 檔（萃自 _legacy/phase3-materiality §6）
+# ---------------------------------------------------------------------------
+
+entities_iros_e1_climate_physical:
+  file: entities/iros/E1-climate-risk-physical-heat-shock.md
+  description: E1 物理風險 IRO — R6-A 從 phase3-materiality §6 萃取的核心 IRO
+  must_contain:
+    - "entity_type: iro"
+    - "topic_slug: E1-climate"
+    - "type: risk"
+    - "category: physical"
+  min_lines: 8
+
+entities_iros_e1_climate_transition:
+  file: entities/iros/E1-climate-risk-transition-carbon-fee.md
+  description: E1 轉型風險 IRO — 碳費衝擊
+  must_contain:
+    - "entity_type: iro"
+    - "topic_slug: E1-climate"
+    - "type: risk"
+  min_lines: 8
+
+entities_iros_e1_climate_opportunity:
+  file: entities/iros/E1-climate-opportunity-sustainable-tourism.md
+  description: E1 機會 IRO — 永續觀光定位
+  must_contain:
+    - "entity_type: iro"
+    - "topic_slug: E1-climate"
+    - "type: opportunity"
+  min_lines: 8
+
+entities_iros_s6_food_safety:
+  file: entities/iros/S6-food-safety-risk-incident.md
+  description: S6 食安風險 IRO
+  must_contain:
+    - "entity_type: iro"
+    - "topic_slug: S6-food-safety"
+    - "type: risk"
+  min_lines: 8
+
+entities_iros_s12_indigenous_culture:
+  file: entities/iros/S12-indigenous-culture-impact-preservation.md
+  description: S12 在地原民文化 IRO — 旅館業特化
+  must_contain:
+    - "entity_type: iro"
+    - "topic_slug: S12-indigenous-culture"
+    - "type: impact"
+  min_lines: 8

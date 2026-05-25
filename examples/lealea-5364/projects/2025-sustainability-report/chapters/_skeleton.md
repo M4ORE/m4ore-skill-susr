@@ -1,3 +1,33 @@
+---
+slug: _skeleton
+entity_type: chapter
+report_slug: 2025-sustainability-report
+title: 章節骨架 — 7 大篇章 index
+framework_refs:
+  - GRI Standards 2021
+  - TCFD
+  - SASB Hotels & Lodging
+  - ISSB IFRS S1/S2
+  - 金管會永續報告書作業辦法 2024-02
+owner: 永續發展辦公室
+discloses_topics:
+  - E1-climate
+  - E2-energy
+  - E3-water
+  - S1-labor-conditions
+  - S4-occupational-health
+  - S6-food-safety
+  - S7-customer-privacy
+  - S8-customer-experience
+  - S10-local-employment
+  - S12-indigenous-culture
+  - G1-governance-structure
+  - G2-integrity
+  - G3-compliance
+is_index: true
+mandatory: true
+---
+
 # Phase 5 — Content Drafting：章節骨架（力麗觀光 5364）
 
 **用途**：依 Phase 3 重大議題清單建立報告書章節結構（不抄 GRI 目錄）；每章節遵循 SOP 連結性公式 **IRO → 治理 → 策略 → 行動與資源 → 目標 → KPI → 展望**。

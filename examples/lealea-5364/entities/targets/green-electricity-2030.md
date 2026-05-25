@@ -3,7 +3,7 @@ slug: green-electricity-2030
 entity_type: target
 kpi_slug: ghg-scope2
 baseline_year: 2023
-baseline_value_pct: null
+baseline_value_pct: 0.0  # SP1 placeholder — 實際版填 2023 綠電佔比
 target_value_pct: 30
 target_year: 2030
 verification_path: T-REC 憑證 + 自發自用

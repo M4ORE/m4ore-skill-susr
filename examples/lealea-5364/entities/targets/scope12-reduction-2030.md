@@ -3,7 +3,7 @@ slug: scope12-reduction-2030
 entity_type: target
 kpi_slug: ghg-scope2
 baseline_year: 2023
-baseline_value: null
+baseline_value: 0.0  # SP1 placeholder — 實際版填當年 Scope 1+2 絕對排放
 target_value_pct_reduction: 25
 target_year: 2030
 verification_path: 第三方有限確信
