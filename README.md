@@ -1,11 +1,45 @@
-# susr — Sustainability Report Skill
+# susr — Sustainability Brain for ESG Consultants
 
-> A Claude Code skill that orchestrates the entire ESG / 永續報告書 SOP using first-principles design.
+> 顧問的 ESG 第二大腦 — 把寫永續報告書的時間從 40-80h 壓縮到 8-15h，
+> 同時讓品質更高、框架更完整、責任 100% 在顧問判斷。
 >
-> - **Codename:** `susr`（短代號，repo / 工作目錄使用）
-> - **Canonical name:** `sustainability-report`（skill frontmatter 識別字）
+> **Co-pilot for ESG consultants, not Replacement.**
 
-[繁體中文](#繁體中文) ・ [English](#english) ・ [License](#license--acknowledgements)
+[繁體中文](#繁體中文) · [English](#english) · [License & Acknowledgements](#license--acknowledgements)
+
+---
+
+## TL;DR
+
+susr v0.1 是**本地優先（local-first）+ MCP-native + Markdown source of truth** 的 ESG 顧問 Co-pilot。
+顧問 `pip install susr` 後，在 Claude Desktop 聊天介面操作 19 個 MCP tools，
+跑完 Phase 3 雙重重大性評估 / Phase 6 報告書 payload 準備 / Phase 7 差距分析。
+資料以 Markdown + SQLite + sqlite-vec 留在顧問本機，符合「客戶資料不出機」原則。
+
+- **MVP 已可用**：Phase 3（4 tools）/ Phase 6 payload prep（4 tools）/ Phase 7 gap analysis（4 tools）
+- **驗證基準**：力麗觀光（5364, TPEx）lealea-5364 fixture 端到端 walkthrough
+- **測試**：275 passed + 2 skipped（Layer 1 lint + Layer 2 scenario + Layer 3 invariant + Layer 4 unit）
+- **誠實揭露**：Phase 4 GHG 計算引擎 / Phase 5 章節自動草稿 / Phase 8 公告流程**尚未實作**
+
+---
+
+## 目錄
+
+- [繁體中文](#繁體中文)
+  - [這是什麼](#這是什麼)
+  - [為什麼 — Co-pilot vs Replacement](#為什麼--co-pilot-vs-replacement)
+  - [給誰用](#給誰用)
+  - [快速開始](#快速開始)
+  - [8-Phase SOP 與 MVP 涵蓋](#8-phase-sop-與-mvp-涵蓋)
+  - [顧問場景示範](#顧問場景示範)
+  - [架構概覽](#架構概覽)
+  - [MVP 驗收成果（依 lealea-5364 真實案例）](#mvp-驗收成果依-lealea-5364-真實案例)
+  - [限制（誠實揭露）](#限制誠實揭露)
+  - [三條 hard rules](#三條-hard-rules)
+  - [文件導覽](#文件導覽)
+  - [戰略樞轉註記](#戰略樞轉註記)
+- [English](#english)
+- [License & Acknowledgements](#license--acknowledgements)
 
 ---
 
@@ -13,146 +47,167 @@
 
 ### 這是什麼
 
-`susr` 是一個 Claude Code skill，把「寫一份永續報告書」從 **「每年從零開始的藝術」** 變成 **「可重複、可審計、可訓練的 8-Phase SOP + 模組化能力組合」**。
+`susr`（codename，canonical name = `sustainability-report`）是一套給 ESG 顧問的 AI 第二大腦。
+它把「寫永續報告書」這件每年從零做起的事，重組成**可審計、可比較、可信任**的結構化工作流：
 
-整合範圍：
+- **Local-first**：所有資料以 Markdown 留在顧問本機；SQLite + sqlite-vec + FTS5 提供 hybrid search
+- **MCP-native**：透過 Anthropic 的 MCP 協定，Claude Desktop / Claude Code / Cursor / Windsurf 都能直接讀寫
+- **Markdown source of truth**：每個 entity 一個 `.md`，配 YAML frontmatter，顧問用 git 就能 diff / review
+- **Co-pilot 不是 Replacement**：susr 不替顧問決定議題重大度、不替顧問寫結論——它只把 40-80h 中**重複、機械、易翻車**的部分自動化，把判斷與責任留給顧問
 
-- **領域知識** — GRI / ISSB / TCFD / ESRS / 台灣金管會作業辦法
-- **數據工程** — GHG Protocol Scope 1/2/3、雙重重大性評估、KPI 公式
-- **檔案產出** — 透過 [`anthropics/skills`](https://github.com/anthropics/skills) 的 `document-skills:docx / xlsx / pptx / pdf` 產出專業檔案
-- **外部研究** — WebSearch 整合，自動同步最新法規、排放因子、同業 benchmark
+技術形態：[Garry Tan 的 gbrain](https://github.com/garrytan/gbrain) 是參考設計來源，但 susr 純粹學習架構模式（page_versions / hybrid search / typed edges / RRF），**code 自己重寫**，不繼承不 fork。
 
-### 為什麼
+### 為什麼 — Co-pilot vs Replacement
 
-核心第一性原理：
+| 面向 | Co-pilot ✅ | Replacement ❌ |
+|---|---|---|
+| 目標客戶 | ESG 顧問 / 顧問公司 | 想省顧問費的企業 |
+| 商業模式 | 顧問公司訂閱 | 按報告計價 |
+| 顧問反應 | 視為幫手 | 視為威脅 |
+| 護城河 | 顧問專業 + AI = 混合智能 | 純 AI，易被追上 |
+| 法律風險 | 低（人類最終決策） | 高（幻覺、責任歸屬） |
+| 定位 | 顧問的第二大腦 | 企業的自動報告機 |
 
-1. **雙重重大性（Double Materiality）優先** — 同時評估 Impact + Financial
-2. **價值鏈邊界明確** — 上游 → 自營 → 下游
-3. **數據可追溯** — 每個數字必有來源、公式、版本、責任人
-4. **IRO 連結性** — Impact / Risk / Opportunity → 治理 → 策略 → 行動 → 目標 → KPI 首尾貫通
-5. **反綠色洗白** — 不只報好消息，必須揭露挑戰、未達標、目標調整理由
-6. **決策有用性** — 報告對象是利害關係人決策，不是行銷部
+詳見三原則文件 [`docs/defeinition.md`](docs/defeinition.md) / [`docs/target.md`](docs/target.md) / [`docs/product_structure.md`](docs/product_structure.md)。
 
-### 8-Phase SOP
+### 給誰用
 
-```
-Phase 0  Pre-flight Dependencies      ── 確認 sub-skill 環境
-Phase 1  Preparation & Scoping        ── 確定邊界、標準、責任分工
-Phase 2  Research & Benchmarking      ── WebSearch 同步法規 / peer / 因子
-Phase 3  Double Materiality           ── 雙軸評估 → 重大性矩陣
-Phase 4  Data Engineering             ── ESG_Data_Pack.xlsx（公式 + 驗證）
-Phase 5  Content Drafting             ── 章節草稿（IRO → KPI 連結）
-Phase 6  Report Assembly              ── docx + pdf + pptx 專業輸出
-Phase 7  Review & Assurance Readiness ── 合規檢查 + 確信前置
-Phase 8  Filing & Continuous Improve  ── MOPS 公告 + 衍生改進
-```
+- ✅ **獨立 ESG 顧問 / 小型顧問公司**（目前 design partner 鎖定）
+- ✅ **顧問內 dev-friendly 成員**（Claude Code 進階操作）
+- ❌ **想省顧問費的中小企業**（戰略決策上排除，避免變成 Replacement）
+- ❌ **中型本土顧問 + 四大永續組**（短期不主動爭取，留待 PMF 後）
 
-詳細工作流見 [`skills/sustainability-report/SKILL.md`](skills/sustainability-report/SKILL.md)。
-
-### Quick Start
+### 快速開始
 
 ```bash
-# 1. Clone 本專案
-git clone https://github.com/M4ORE/m4ore-skill-susr.git susr
-cd susr
-
-# 2. 複製 skill 到 Claude Code skills 目錄
-# macOS / Linux:
-cp -r skills/sustainability-report ~/.claude/skills/
-
-# Windows (PowerShell):
-Copy-Item -Recurse skills\sustainability-report $env:USERPROFILE\.claude\skills\
-
-# Windows (cmd):
-xcopy /E /I skills\sustainability-report %USERPROFILE%\.claude\skills\sustainability-report
+pip install susr
 ```
 
-**3. 在 Claude Code 中觸發**
+設定 Claude Desktop：在 `claude_desktop_config.json` 加入
+
+```json
+{
+  "mcpServers": {
+    "susr": { "command": "susr-mcp" }
+  }
+}
+```
+
+config 路徑：macOS 在 `~/Library/Application Support/Claude/`，Windows 在 `%APPDATA%\Claude\`。
+
+重啟 Claude Desktop，開新對話：
 
 ```
-為 X 公司製作 2025 永續報告書
-ESG 雙重重大性評估
-Scope 3 範疇三盤查指引
+顧問：幫我建一個叫 acme-1234 的客戶 workspace。
+      紡織業上市櫃，合併報表邊界，要做 2025 永續報告書。
+
+Claude：[呼叫 create_client_workspace ...]
+        已建立 ~/work/acme-1234/，下一步建議...
 ```
 
-> **更新 skill：** 本 repo 採 *複製式部署*（不是 symlink），每次 repo 更新後需重跑 step 2 才會在 Claude 環境生效。
+之後零 shell 指令。完整安裝流程與健康檢查見 [`docs/user-guide/README.md`](docs/user-guide/README.md)。
 
-### 依賴等級（Graceful Degradation）
+### 8-Phase SOP 與 MVP 涵蓋
 
-susr 採 **漸進式降級** 設計：缺少高 tier 不會破壞低 tier 的使用。
+```
+Phase 1  Scoping              ── ⚙️  intelligence + skill SOP guidance
+Phase 2  Research             ── ⚙️  WebSearch + shared_kb/regulations
+Phase 3  Double Materiality   ── ✅ MVP v0.1（4 MCP tools 端到端）
+Phase 4  Data Engineering     ── ❌ 未實作（顧問仍用 xlsx skill 手算 GHG）
+Phase 5  Content Drafting     ── ❌ 未自動草稿（章節骨架 + IRO 已有）
+Phase 6  Report Assembly      ── ✅ Payload prep v0.1（4 tools，docx/pdf/pptx 由 anthropics/skills 渲染）
+Phase 7  Gap Analysis         ── ✅ 4 tools（compliance / GRI Index / assurance readiness / full gap）
+Phase 8  Filing & Improve     ── ❌ 未實作
+```
 
-| Tier | 內容 | 不滿足時的影響 |
-|---|---|---|
-| **0 必要** | Claude Code + skill 已複製到 `~/.claude/skills/` | susr 無法啟動 |
-| **1 建議** | 啟用 [`anthropics/skills`](https://github.com/anthropics/skills) document-skills 插件 | Phase 1–5 完整可用；Phase 4 / 6 呼叫 sub-skill 時 fail with `skill not found` |
-| **2 完整** | 底層工具（LibreOffice、Node、Python 套件） | sub-skill 啟動但中段失敗（例如 `soffice: command not found`）；Phase 0 會引導 AI 解析錯誤 |
+詳細工作流見 [`skills/sustainability-report/SKILL.md`](skills/sustainability-report/SKILL.md)（Claude Code 對話版）與 [`docs/research/step1-spec.md`](docs/research/step1-spec.md)（brain 架構藍圖）。
 
-**Tier 2 底層工具**（各 sub-skill 各自需要）：
+### 顧問場景示範
 
-| Sub-skill | 底層依賴 |
+四個 walkthrough 場景，從顧問實際痛點出發：
+
+- **[接到新客戶第一週](docs/user-guide/scenarios/接到新客戶第一週.md)** — 過去 12-18h 啟動成本壓到 5 分鐘建 workspace + 一句話 fork 上年資料
+- **[議題池怎麼選](docs/user-guide/scenarios/議題池怎麼選.md)** — 三方合併（產業包 + 框架 + 上年）3 分鐘給 28 候選 + 雙軸評分
+- **[客戶問為何用這個排放因子](docs/user-guide/scenarios/客戶問為何用這個排放因子.md)** — timeline + page_versions 30 秒拉完整證據鏈，告別翻 mailbox
+- **[客戶今年要重述去年範疇 3](docs/user-guide/scenarios/客戶今年要重述去年範疇3.md)** — 自動算變動 %、超過 5% 強制揭露、反綠色洗白機制 fail-closed
+
+完整 user-guide 入口見 [`docs/user-guide/README.md`](docs/user-guide/README.md)。
+
+### 架構概覽
+
+四層內部結構（對應三原則文件的「智能層」+「輸入層」+「顧問專屬功能」）：
+
+1. **`susr.brain`** — SQLite + sqlite-vec + FTS5 引擎；17 個 entity types、19 條 typed edges、6 條連結性 invariants（含 R4 拆出的 I1a/I1b），page_versions snapshot + append-only timeline
+2. **`susr.mcp.tools`** — 19 個 MCP tools 跨 Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action
+3. **`susr.shared_kb.data`** — pip ship 的常駐知識庫（frameworks / industry-packs / factors / glossary / regulations / checklists / prompts）
+4. **`skills/sustainability-report/`** — Claude Code 用對話路徑（純 SOP guidance，與 brain 並行獨立）
+
+完整 spec 見 [`docs/research/step1-spec.md`](docs/research/step1-spec.md)。
+
+### MVP 驗收成果（依 lealea-5364 真實案例）
+
+對照力麗觀光（5364, TPEx，觀光業）2025 永續報告書情境跑端到端：
+
+| 指標 | 數字 |
 |---|---|
-| `docx` | pandoc、LibreOffice、`npm install -g docx` |
-| `xlsx` | LibreOffice、Python `openpyxl pandas` |
-| `pptx` | LibreOffice、Poppler、Pillow、`npm install -g pptxgenjs` |
-| `pdf`  | Poppler、Python `pypdf pdfplumber reportlab pytesseract pdf2image` |
+| Entity 多樣性 | 17 types |
+| Lealea pages ingested | 81（28 topics + 14 IROs + 14 actions + 5 chapters + 其他） |
+| Typed edges | 51（含 14 `topic_has_iro` + 14 `iro_addressed_by`） |
+| Layer 3 invariants | **5/6 全綠**（I1a / I1b / I3 / I4 / I5 ✅；I2 chapter framework 細節 R8-3 待修） |
+| 端到端測試 | 275 passed + 2 skipped |
+| Phase 6 payload | chapters 5 / iros 14 / kpis 8 / targets 3 **全非空** |
+| Phase 7 gap severity | critical 38 / warning 22 / info 39（fixture placeholder 含其中） |
 
-> 完整安裝指令請見各 sub-skill 自身 `SKILL.md`（避免本 repo 與 sub-skill 不同步）。
+詳細驗收見 [`docs/walkthroughs/`](docs/walkthroughs/)（R2 first cut / R3 P0 補強 / R6 Phase 6+7 收尾共 3 份）。
 
-**80% 使用價值不依賴 Tier 2** — 即使沒有底層工具，使用者仍能取得 SOP 指引、知識庫、prompt 模板，自行用 Word / Excel / PowerPoint 收尾。
+### 限制（誠實揭露）
 
-### References 目錄導覽
+> 「對使用者誠實的前提是先對自己誠實。」— CLAUDE.md §6.1
 
-```
-skills/sustainability-report/
-├── SKILL.md                                    主入口（Phase 0 + 8-Phase SOP）
-└── references/
-    ├── esg-glossary-zh-en.md                   雙語詞彙表
-    ├── compliance-checklist.md                 60+ 項合規檢查（Phase 7）
-    ├── materiality-topics-universe.md          40 項議題池 + 評分範本（Phase 3）
-    ├── ghg-protocol.md                         GHG Scope 1/2/3 計算（Phase 4）
-    ├── taiwan-fsc-sustainability-guidelines.md 台灣金管會（Phase 1, 8）
-    ├── websearch-pending.md                    待查證項目清單（Phase 2 入口）
-    ├── phase2-research-prompts.md              WebSearch 模板（Phase 2）
-    ├── phase4-xlsx-prompts.md                  Data Pack 結構（Phase 4）
-    ├── phase6-docx-prompts.md                  docx 組裝（Phase 6）
-    ├── phase6-pdf-prompts.md                   pdf 輸出（Phase 6）
-    └── phase6-pptx-prompts.md                  pptx 簡報 + 視覺 QA（Phase 6）
-```
+- ❌ **Phase 4 GHG 計算引擎未實作**：顧問仍用 `xlsx` sub-skill 手算 Scope 1/2/3，susr brain 只存結果不算過程
+- ❌ **Phase 5 章節 LLM 自動草稿未實作**：顧問用 brain 整理素材，章節敘事仍由顧問手寫
+- ❌ **Phase 6 文件渲染由 `anthropics/skills` 處理**：susr 只 prep payload（JSON-able pydantic models），不直接生 docx / pdf / pptx
+- ❌ **Phase 8 公告 / MOPS filing 未實作**
+- ⏳ **Claude Desktop stdio transport 端到端未驗證**：dev env 無 mcp SDK，目前所有 tool 驗證均繞 stdio 直呼函式
+- ⏳ **I2 chapter framework 一致性 invariant 仍有 5 violations**：R8-3 backlog
+- ⏳ **跨 client 「我服務過 5 家觀光業，共通議題?」匿名化合規邊界未定**：consultant-kb 單向闘已實作，反向 promotion 需手動 anonymize + reviewer
 
-### Examples
+### 三條 hard rules
 
-端到端試做案例：[`examples/lealea-5364/`](examples/lealea-5364/) — 以力麗觀光開發（5364, TPEx, 觀光業）2023 永續報告書為對照標的，完整跑完 8-Phase SOP。
+CLAUDE.md 主條文，違反不 commit：
 
-| 檔案 | Phase | 內容 |
-|---|---|---|
-| `phase1-scoping.md` | 1 | 公司邊界、適用標準、責任分工、9 大假設與限制 |
-| `phase2-research-log.md` | 2 | 4 家旅館業同業 peer benchmark + 法規最新版 + 113 年度排放因子 |
-| `phase3-materiality.md` | 3 | 28 議題池、雙軸評分、矩陣、IRO 對應、利害關係人議合 |
-| `phase4-xlsx-skeleton.md` | 4 | 12 sheets 設計（Scenario A/B 雙軌、HVAC 制冷劑、Scope 3 取捨）|
-| `phase5-chapter-skeleton.md` | 5 | 7 大篇 + 附錄章節骨架 |
-| `phase5-tcfd-sample.md` | 5 | 完整 TCFD 章節示範（IRO → 治理 → 策略 → 行動 → 目標 → KPI → 展望）|
-| `phase6-assembly-plan.md` | 6 | 5 個 sub-skill prompt 套裝 + 失敗模式表 |
-| `phase7-gap-analysis.md` | 7 | **力麗實際 vs SOP 試做 14 項揭露差距總表** |
-| `phase7-pdf-extract.md` | 7 | 力麗 2023 PDF 章節結構抽取（66 頁逐章）|
-| `walkthrough-notes.md` | — | Lessons learned + SOP 評等 + 反向示範意涵 |
+1. **Subagent 派工原則（§4.5）**：可派則派 — 研究 / scaffold / 並行可行工程必派 subagent；對齊邊界 + 跑驗證
+2. **Commit 紀律（§4.7）**：test pass + docs 同步 + 無 stale references → 才能 commit
+3. **Content Hygiene（§4.6）**：漸進揭露 + 文件大小門檻（Markdown 軟 500 / 硬 1000；Python 軟 300 / 硬 500）
 
-**重要發現**：力麗 2023 為台灣中型 TPEx 上市公司的「**反向示範**」典型樣本 — 無雙重重大性、TCFD 完全缺席、GHG 僅 Scope 2 殘缺、GRI 用 2016 舊版、無第三方確信。本案例可直接作為「**升級指南**」教材：「我家公司報告書像力麗，怎麼升級到金管會 ISSB 強制標準？」
+每個宣稱 feature 都必須有對應測試（§6.1）— 來自 gbrain spec-impl gap 教訓。
 
-### 開發歷程（PDCA 透明化）
+### 文件導覽
 
-本專案採 PDCA 工作流，所有設計決策都有可追溯紀錄：
+| 路徑 | 用途 |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | 對 Claude Code 的最高原則 instructions |
+| [`docs/defeinition.md`](docs/defeinition.md), [`docs/target.md`](docs/target.md), [`docs/product_structure.md`](docs/product_structure.md) | 三原則文件（憲法級，最高優先） |
+| [`docs/user-guide/`](docs/user-guide/) | 給顧問的場景、哲學、features |
+| [`docs/research/`](docs/research/) | gbrain survey + Step 1 spec + websearch audit |
+| [`docs/walkthroughs/`](docs/walkthroughs/) | Layer 5 acceptance tests（R2/R3/R6） |
+| [`docs/standards/skill-development.md`](docs/standards/skill-development.md) | Skill 開發 SOP |
+| [`dashboard.html`](dashboard.html) | 決策討論協作板（17 個 Q 全 decided） |
+| [`packages/susr/`](packages/susr/) | Python package（brain + MCP server + shared_kb） |
+| [`skills/sustainability-report/`](skills/sustainability-report/) | Claude Code skill |
+| [`examples/lealea-5364/`](examples/lealea-5364/) | 端到端 fixture，Option C 結構（entities + projects + sourcedocs） |
+| [`tests/`](tests/) | Repo-level Layer 1+2 lint / scenario；package-level Layer 3+4 在 `packages/susr/tests/` |
 
-- [`docs/sprints/`](docs/sprints/) — Sprint 規劃
-- [`docs/tasks/`](docs/tasks/) — 任務追蹤
-- [`docs/standards/skill-development.md`](docs/standards/skill-development.md) — 開發標準（§9 涵蓋 Orchestrator Skill 開發流程，適用於任何呼叫 sub-skill 的 skill）
+### 戰略樞轉註記
 
-### Contributing
+**2026-05-25** 由「通用 Claude Code skill」戰略樞轉為「**顧問 Co-pilot SaaS**（local-first OSS 路線）」。
+17 個關鍵問題（Q1-Q17）一輪密集對話內全部 decided，含三次自我修正（Postgres → SQLite、shared-kb 獨立 repo → mono-repo、3 packages → 1 package）。完整決策軌跡見 [`CLAUDE.md` §8 Decisions Log](CLAUDE.md#8-演進註記decisions-log)。
 
-詳見 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
-
-### 為何 codename 是 susr
-
-工作目錄與 repo 採短代號 `susr` 方便輸入；skill frontmatter 的 `name` 保留描述性的 `sustainability-report`，以利 Claude 與其他使用者識別。詳見 [`docs/tasks/SP1-006.md`](docs/tasks/SP1-006.md)。
+關鍵架構決定：
+- **儲存層**：SQLite + sqlite-vec + FTS5（**不**用 Postgres，顧問零 Docker）
+- **Repo 結構**：mono-repo 內單一 Python package；shared-kb 透過 snapshot copy 進 client repo（**不**用 submodule）
+- **入口**：`susr-mcp` console script，Claude Desktop 是預設 GUI（PMF 後再做自家 GUI + multi-agent CLI）
+- **MVP 第一刀**：Phase 3 重大性評估端到端（susr 與 gbrain 差距最大、價值密度最高）
 
 ---
 
@@ -160,120 +215,92 @@ skills/sustainability-report/
 
 ### What is this
 
-`susr` is a Claude Code skill that turns "writing a sustainability / ESG report" from **a yearly from-scratch art** into **a repeatable, auditable, trainable 8-Phase SOP + modular capabilities**.
+`susr` is a **local-first + MCP-native** AI second-brain for ESG consultants. It restructures the every-year-from-scratch labor of writing a sustainability / ESG report into an auditable, comparable, trustable workflow:
 
-It integrates:
+- **Local-first** — all data lives as Markdown on the consultant's laptop; SQLite + sqlite-vec + FTS5 power hybrid search
+- **MCP-native** — Anthropic's MCP protocol lets Claude Desktop / Claude Code / Cursor / Windsurf read & write directly
+- **Markdown source of truth** — one `.md` per entity with YAML frontmatter; consultants can diff / review with plain git
+- **Co-pilot, not Replacement** — susr never decides material topics for you. It automates the 40-80h of repetitive, mechanical, error-prone steps and leaves judgment + accountability with the consultant
 
-- **Domain knowledge** — GRI / ISSB / TCFD / ESRS / Taiwan FSC reporting rules
-- **Data engineering** — GHG Protocol Scope 1/2/3, double materiality assessment, KPI formulas
-- **File production** — via Anthropic's [`document-skills`](https://github.com/anthropics/skills) (`docx / xlsx / pptx / pdf`)
-- **External research** — WebSearch integration to sync latest regulations, emission factors, peer benchmarks
+Architectural reference: [Garry Tan's gbrain](https://github.com/garrytan/gbrain) (we study the patterns — page_versions, hybrid search, typed edges, RRF — and **rewrite the code from scratch**; no fork, no dependency).
 
-### Why
+### Why — Co-pilot vs Replacement
 
-Core first principles:
+| Dimension | Co-pilot (yes) | Replacement (no) |
+|---|---|---|
+| Target customer | ESG consultants / firms | Enterprises trying to cut consultant cost |
+| Business model | Consulting-firm subscription | Per-report pricing |
+| Consultant reaction | Sees it as an ally | Sees it as a threat |
+| Moat | Consultant expertise + AI = hybrid intelligence | Pure AI, easily overtaken |
+| Legal risk | Low (human-in-the-loop) | High (hallucination, liability) |
+| Positioning | "Consultant's second brain" | "Enterprise auto-report machine" |
 
-1. **Double Materiality first** — Impact + Financial
-2. **Value chain boundary explicit** — upstream → operations → downstream
-3. **Auditable data** — every number has source, formula, version, owner
-4. **IRO connectivity** — Impact / Risk / Opportunity → governance → strategy → actions → targets → KPIs end-to-end
-5. **Anti-greenwashing** — disclose challenges, missed targets, target revisions
-6. **Decision-usefulness** — the report serves stakeholder decisions, not marketing
-
-### 8-Phase SOP
-
-```
-Phase 0  Pre-flight Dependencies
-Phase 1  Preparation & Scoping
-Phase 2  Research & Benchmarking         (WebSearch)
-Phase 3  Double Materiality
-Phase 4  Data Engineering                (xlsx)
-Phase 5  Content Drafting
-Phase 6  Report Assembly                 (docx + pdf + pptx)
-Phase 7  Review & Assurance Readiness
-Phase 8  Filing & Continuous Improvement
-```
-
-Full workflow in [`skills/sustainability-report/SKILL.md`](skills/sustainability-report/SKILL.md).
+See the three canonical docs: [`docs/defeinition.md`](docs/defeinition.md) / [`docs/target.md`](docs/target.md) / [`docs/product_structure.md`](docs/product_structure.md).
 
 ### Quick Start
 
 ```bash
-# 1. Clone
-git clone https://github.com/M4ORE/m4ore-skill-susr.git susr
-cd susr
-
-# 2. Copy the skill to Claude Code's skills directory
-# macOS / Linux:
-cp -r skills/sustainability-report ~/.claude/skills/
-
-# Windows (PowerShell):
-Copy-Item -Recurse skills\sustainability-report $env:USERPROFILE\.claude\skills\
-
-# Windows (cmd):
-xcopy /E /I skills\sustainability-report %USERPROFILE%\.claude\skills\sustainability-report
+pip install susr
 ```
 
-**3. Trigger in Claude Code**
+Configure Claude Desktop's `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "susr": { "command": "susr-mcp" }
+  }
+}
+```
+
+Restart Claude Desktop. In a new chat:
 
 ```
-Create a 2025 sustainability report for Company X
-ESG double materiality assessment
-Scope 3 emissions inventory guidance
+You: Create a client workspace called acme-1234. Textile industry,
+     consolidated boundary, working on the 2025 sustainability report.
+
+Claude: [calls create_client_workspace ...]
 ```
 
-> **Updating the skill:** this repo uses *copy-based deployment* (not symlink), so any repo update requires re-running step 2 to take effect in Claude.
+Zero shell commands after that. Full install path: [`docs/user-guide/README.md`](docs/user-guide/README.md).
 
-### Dependency Tiers (Graceful Degradation)
+### MVP Status
 
-susr is designed for **progressive degradation** — missing a higher tier does not break the lower tiers.
+- ✅ **Phase 3 (Double Materiality)** — 4 MCP tools end-to-end (topic universe search / dual-axis scoring / matrix generation / stakeholder engagement helper)
+- ✅ **Phase 6 (Payload Prep)** v0.1 — 4 tools (docx / pdf / pptx investor deck / pptx board deck); actual rendering delegated to `anthropics/skills`
+- ✅ **Phase 7 (Gap Analysis)** — 4 tools (compliance checklist / GRI Content Index / assurance readiness / full gap analysis)
+- ❌ Phase 4 (GHG calculation engine) — not implemented; consultants still use the `xlsx` sub-skill manually
+- ❌ Phase 5 (LLM chapter drafting) — not implemented; consultants write narrative themselves on top of brain-managed material
+- ❌ Phase 8 (Filing / continuous improvement) — not implemented
+- ⏳ Claude Desktop stdio transport — not yet end-to-end verified (no `mcp` SDK in dev env)
 
-| Tier | Requirement | Impact if missing |
-|---|---|---|
-| **0 Required** | Claude Code + skill copied to `~/.claude/skills/` | susr cannot launch |
-| **1 Recommended** | Enable [`anthropics/skills`](https://github.com/anthropics/skills) document-skills plugin | Phases 1–5 fully usable; Phase 4 / 6 fail with `skill not found` when invoking sub-skills |
-| **2 Full** | Underlying tools (LibreOffice, Node, Python packages) | Sub-skill loads but fails mid-flow (e.g., `soffice: command not found`); Phase 0 teaches the AI how to parse such errors |
+### Architecture
 
-**Tier 2 underlying tools** (per sub-skill):
+Four internal layers:
 
-| Sub-skill | Dependencies |
-|---|---|
-| `docx` | pandoc, LibreOffice, `npm install -g docx` |
-| `xlsx` | LibreOffice, Python `openpyxl pandas` |
-| `pptx` | LibreOffice, Poppler, Pillow, `npm install -g pptxgenjs` |
-| `pdf`  | Poppler, Python `pypdf pdfplumber reportlab pytesseract pdf2image` |
+1. **`susr.brain`** — SQLite + sqlite-vec + FTS5; 17 entity types, 19 typed edges, 6 connectivity invariants (incl. R4-split I1a / I1b), `page_versions` snapshot + append-only `timeline_entries`
+2. **`susr.mcp.tools`** — 19 MCP tools across Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action
+3. **`susr.shared_kb.data`** — pip-shipped knowledge base (frameworks / industry-packs / emission factors / glossary / regulations / checklists / prompts)
+4. **`skills/sustainability-report/`** — Claude Code conversational SOP path (runs in parallel with brain, independent)
 
-> For full install commands, refer to each sub-skill's own `SKILL.md` (we don't mirror them here to avoid drift).
+Full spec: [`docs/research/step1-spec.md`](docs/research/step1-spec.md).
 
-**80% of the value does not depend on Tier 2** — even without the underlying tools, users still get SOP guidance, the knowledge base, and prompt templates, and can finalize outputs manually in Word / Excel / PowerPoint.
+### Validation — Lealea-5364 end-to-end
 
-### References Layout
+Validated against **Lealea Hotels (5364, TPEx, hospitality)** 2025 sustainability report scenario:
 
-See the directory tree in the [繁體中文 section](#references-目錄導覽) above.
+- 81 pages ingested (28 topics + 14 IROs + 14 actions + 5 chapters + others)
+- 51 typed edges (incl. 14 `topic_has_iro` + 14 `iro_addressed_by`)
+- 5/6 Layer-3 invariants green (I2 chapter consistency: 5 violations open in R8-3 backlog)
+- Phase 6 payload all non-empty (chapters 5 / iros 14 / kpis 8 / targets 3)
+- Phase 7 gap severity: critical 38 / warning 22 / info 39
+- **275 tests passed + 2 skipped**
 
-### Examples
+Detailed walkthroughs: [`docs/walkthroughs/`](docs/walkthroughs/) (R2 / R3 / R6).
 
-End-to-end walkthrough: [`examples/lealea-5364/`](examples/lealea-5364/) — uses **Lealea Hotels (5364, TPEx, hospitality)** 2023 sustainability report as the benchmark target, running the full 8-Phase SOP.
+### Strategic Pivot
 
-10 deliverables covering Phase 1 scoping → Phase 2 peer benchmark → Phase 3 double materiality → Phase 4 xlsx skeleton → Phase 5 TCFD sample chapter → Phase 6 assembly plan → Phase 7 gap analysis → walkthrough notes.
-
-**Key finding**: Lealea 2023 turned out to be a **reverse-example** typical of mid-cap TPEx-listed companies — no double materiality, TCFD entirely absent, GHG only Scope 2 (incomplete), GRI stuck on 2016, no third-party assurance. The case study works as an **upgrade-path guide**: "my company's report looks like Lealea's — how do I upgrade to FSC ISSB-mandatory standards?"
-
-### Development History (PDCA Transparency)
-
-This project follows a PDCA workflow with full traceability:
-
-- [`docs/sprints/`](docs/sprints/) — sprint planning
-- [`docs/tasks/`](docs/tasks/) — task tracking
-- [`docs/standards/skill-development.md`](docs/standards/skill-development.md) — development standards (§9 covers orchestrator skill principles, applicable to any skill that calls sub-skills)
-
-### Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-### Why the codename `susr`
-
-The working directory and repo use the short codename `susr` for easy typing; the skill's frontmatter `name` keeps the descriptive `sustainability-report` so Claude and other users can identify its purpose. See [`docs/tasks/SP1-006.md`](docs/tasks/SP1-006.md) for the rationale.
+**2026-05-25** — pivoted from "generic Claude Code skill" to "**consultant Co-pilot SaaS (local-first OSS path)**". 17 architectural questions decided in a single intensive session, with three self-corrections (Postgres → SQLite, separate shared-kb repo → mono-repo, 3 packages → 1 package). Full trail in [`CLAUDE.md` §8](CLAUDE.md#8-演進註記decisions-log).
 
 ---
 
@@ -283,10 +310,11 @@ MIT License — see [`LICENSE`](LICENSE).
 
 **Thanks to:**
 
-- [Anthropic Claude](https://claude.com) and
-  [`anthropics/skills`](https://github.com/anthropics/skills) for the
-  document-skills foundation that this orchestrator builds upon
-- First-principles discussion sparked by Grok 4 (private draft `plan.md`)
+- [Anthropic Claude](https://claude.com) for the MCP protocol and Python SDK that makes susr's tool surface possible
+- [`anthropics/skills`](https://github.com/anthropics/skills) for the document-skills (docx / xlsx / pptx / pdf) that handle Phase 6 rendering
+- [Garry Tan's gbrain](https://github.com/garrytan/gbrain) — reference architecture for a local-first AI knowledge system. susr studies the patterns (page_versions, hybrid search, typed edges, RRF) and **rewrites without inheriting code** (Plan B per CLAUDE.md §8, 2026-05-25 decision)
+- First-principles ESG SOP design rooted in the SP1-004 walkthrough on Lealea Hotels (5364, TPEx)
 
-**Project status:** under active development. See `docs/sprints/SP1.md` for
-current Sprint progress.
+**Project status:** susr **v0.1 MVP** — Phase 3 / Phase 6 payload prep / Phase 7 gap analysis are end-to-end usable. Phase 4 / 5 / 8 explicitly out of scope for v0.1.
+
+See [`CLAUDE.md`](CLAUDE.md) for the canonical instructions to Claude Code working on this repo, and [`dashboard.html`](dashboard.html) for the live decisions board.
