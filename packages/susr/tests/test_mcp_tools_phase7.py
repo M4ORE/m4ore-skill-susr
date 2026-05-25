@@ -34,11 +34,13 @@ from susr.mcp.tools.phase7 import (
     ComplianceChecklistResult,
     FullGapAnalysisResult,
     GriContentIndexResult,
+    _resolve_checklist_path,
     generate_assurance_readiness_checklist,
     generate_gri_content_index,
     run_compliance_checklist,
     run_full_gap_analysis,
 )
+from susr.shared_kb import SHARED_KB_DATA_DIR
 
 
 def _ws_path(tmp_client_workspace: Any) -> Path:
@@ -362,3 +364,77 @@ def test_phase7_tools_registered_in_server() -> None:
     }
     missing = expected - names
     assert not missing, f"phase7 tools missing from server: {missing}; got {names}"
+
+
+# ---------------------------------------------------------------------------
+# Test 9-11: _resolve_checklist_path — 來源優先序契約測試（R5 patch）
+#
+# 確保 client override > package shared_kb > legacy skills/references 的順序
+# 不被未來 refactor 打破（這個順序影響顧問客製 checklist 是否生效）。
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_checklist_uses_shared_kb_by_default(tmp_path) -> None:
+    """不提供 client_workspace → 應回 packages/.../shared_kb 路徑 + source='package'。"""
+    path, source = _resolve_checklist_path("phase7")
+    assert source == "package", f"expected 'package' source, got {source!r}"
+    # 路徑應落在 SHARED_KB_DATA_DIR 之下
+    assert path.is_relative_to(SHARED_KB_DATA_DIR), (
+        f"expected path under shared_kb data dir, got {path}"
+    )
+    assert path.name == "compliance-phase7.md"
+    assert path.exists()
+
+
+def test_resolve_checklist_prefers_client_override(tmp_path) -> None:
+    """client workspace 內若有自訂 compliance-phase7.md → 應優先使用 + source='client'。"""
+    # 建 tmp client workspace 結構，並放一份自訂 checklist
+    client_root = tmp_path / "client-x"
+    override_dir = client_root / "shared" / "checklists"
+    override_dir.mkdir(parents=True)
+    override_path = override_dir / "compliance-phase7.md"
+    override_path.write_text(
+        "# Custom checklist override\n\n- [ ] X1 client-specific item\n",
+        encoding="utf-8",
+    )
+
+    path, source = _resolve_checklist_path("phase7", client_workspace=client_root)
+    assert source == "client", f"expected 'client' source, got {source!r}"
+    assert path == override_path
+    # sanity：內容確實是 override（不是 package 版）
+    assert "client-specific" in path.read_text(encoding="utf-8")
+
+
+def test_resolve_checklist_falls_back_to_references_if_no_shared_kb(
+    tmp_path, monkeypatch
+) -> None:
+    """shared_kb 內無 phase7 checklist → 應 fallback 到 skills/references/ legacy 檔。
+
+    用 monkeypatch 把 phase7 模組內的 ``SHARED_KB_DATA_DIR`` 改指向空目錄，
+    模擬「package shared_kb 內檔案不存在」的環境；同時不提供 client_workspace
+    → 應只剩 legacy fallback 可用。
+    """
+    from susr.mcp.tools import phase7 as phase7_mod
+
+    empty_kb = tmp_path / "empty-shared-kb"
+    (empty_kb / "checklists").mkdir(parents=True)  # 目錄存在但無 compliance-phase7.md
+    monkeypatch.setattr(phase7_mod, "SHARED_KB_DATA_DIR", empty_kb)
+
+    path, source = _resolve_checklist_path("phase7")
+    assert source == "legacy", f"expected 'legacy' source, got {source!r}"
+    assert path.name == "compliance-checklist.md"
+    assert "skills" in path.parts and "sustainability-report" in path.parts
+    assert path.exists()
+
+
+def test_resolve_checklist_raises_when_all_paths_missing(tmp_path, monkeypatch) -> None:
+    """三條路徑都不存在時應 raise FileNotFoundError 且訊息列出 searched paths。"""
+    from susr.mcp.tools import phase7 as phase7_mod
+
+    empty_kb = tmp_path / "empty-shared-kb"
+    empty_kb.mkdir()
+    monkeypatch.setattr(phase7_mod, "SHARED_KB_DATA_DIR", empty_kb)
+
+    # framework='ghost' → 連 legacy 也不適用（legacy 只認 phase7）
+    with pytest.raises(FileNotFoundError, match="checklist not found"):
+        _resolve_checklist_path("ghost")

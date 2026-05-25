@@ -21,11 +21,13 @@ TOC:
 設計選項：
     - parsing checklist 用 simple regex（``- [ ]`` / ``- [x]`` / 編號項目），
       不做 markdown AST。對非標準格式寬鬆失敗（skip 不抓不出來的項）。
-    - checklist 來源優先順序：
-        (a) ``packages/susr/susr/shared_kb/data/checklists/compliance-phase7.md``
-            （Step 3 已搬過去 — 顧問常駐 KB）
-        (b) ``skills/sustainability-report/references/compliance-checklist.md``
-            （legacy fallback — Step 3 之前的位置）
+    - checklist 來源優先順序（高→低）：
+        1. ``<client_workspace>/shared/checklists/compliance-<framework>.md``
+           （client 自訂 snapshot — 顧問若手動改過就尊重它）
+        2. ``packages/susr/susr/shared_kb/data/checklists/compliance-<framework>.md``
+           （pip ship 預設 — Step 3 已搬入 shared_kb；無 client 自訂時的常駐 KB）
+        3. ``skills/sustainability-report/references/compliance-checklist.md``
+           （legacy fallback — Step 3 之前的位置，向後相容）
     - fulfillment 判斷對應到 brain：
         * 「GRI 2-1 組織概況」→ 找 entity_type='chapter' 且 framework_refs 含 'GRI 2-1'
         * 「範疇一排放量」     → 找 entity_type='kpi' slug 含 'scope1' / 'ghg-scope1'
@@ -45,7 +47,10 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel
 
+from susr.shared_kb import SHARED_KB_DATA_DIR
 from susr.workspace import find_client_workspace
+
+ChecklistSource = Literal["client", "package", "legacy"]
 
 # ---------------------------------------------------------------------------
 # Constants & embedded reference data
@@ -177,31 +182,81 @@ class FullGapAnalysisResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _resolve_checklist_path(framework: str) -> Path:
-    """Try (a) shared_kb path first, (b) skills/references/ fallback.
+def _resolve_checklist_path(
+    framework: str,
+    *,
+    client_workspace: Optional[Path] = None,
+) -> tuple[Path, ChecklistSource]:
+    """依優先序解析 compliance checklist 來源檔。
 
-    framework 目前只支援 'phase7'（compliance-phase7.md）；未來可加 'gri-2021'
-    / 'issb' / 'fsc' 等獨立 checklist。
+    順序（最具體優先）：
+
+    1. ``<client_workspace>/shared/checklists/compliance-<framework>.md``
+       — client repo 在 create_client_workspace 階段 snapshot 進來的副本；
+       若顧問針對該 client 客製過 checklist，這份應優先採用。
+    2. ``packages/susr/susr/shared_kb/data/checklists/compliance-<framework>.md``
+       — pip ship 的常駐 KB（CLAUDE.md §8 decision 3）。Step 3 已 land。
+    3. ``skills/sustainability-report/references/compliance-checklist.md``
+       — Step 3 搬遷前的舊位置；保留為 mono-repo dev 環境向後相容 fallback。
+       注意此路徑只認 ``framework='phase7'``（legacy 檔不分 framework）。
+
+    Args:
+        framework: e.g. ``'phase7'``。未來可加 ``'gri-2021'`` / ``'issb'`` /
+            ``'fsc-twse'`` 等獨立 checklist。
+        client_workspace: per-client workspace 絕對路徑；若 None 則跳過 client
+            override 階段直接看 package shared_kb。
+
+    Returns:
+        ``(path, source)`` tuple — source 為 ``'client' | 'package' | 'legacy'``，
+        讓 caller / log 知道實際採用哪份。
+
+    Raises:
+        FileNotFoundError: 三條路徑皆不存在時。錯誤訊息列出全部 searched paths。
     """
-    # (a) shared_kb（Step 3 已搬）
-    pkg_root = Path(__file__).resolve().parents[2]  # packages/susr/susr/
-    shared_path = pkg_root / "shared_kb" / "data" / "checklists" / f"compliance-{framework}.md"
-    if shared_path.exists():
-        return shared_path
+    searched: list[Path] = []
 
-    # (b) legacy references fallback
-    # PACKAGE_ROOT/../../skills/sustainability-report/references/
-    repo_root = pkg_root.parent.parent  # mono-repo root
-    legacy_path = (
-        repo_root / "skills" / "sustainability-report" / "references"
-        / "compliance-checklist.md"
-    )
-    if legacy_path.exists():
-        return legacy_path
+    # (1) client override（最具體）
+    if client_workspace is not None:
+        client_path = (
+            Path(client_workspace) / "shared" / "checklists"
+            / f"compliance-{framework}.md"
+        )
+        searched.append(client_path)
+        if client_path.exists():
+            return client_path, "client"
+
+    # (2) package shared_kb（pip ship 預設）
+    # 用模組級 SHARED_KB_DATA_DIR — 測試可 monkeypatch 此符號模擬「shared_kb 缺檔」。
+    package_path = SHARED_KB_DATA_DIR / "checklists" / f"compliance-{framework}.md"
+    searched.append(package_path)
+    if package_path.exists():
+        return package_path, "package"
+
+    # (3) legacy mono-repo references（向後相容）
+    # 舊位置只有 compliance-checklist.md（不分 framework），對應 phase7；
+    # 因此僅當 framework=='phase7' 時納入 fallback。
+    # 用 marker-based 找 repo root（CLAUDE.md 在根），比 parents[N] 計數穩健 —
+    # 不會因 Python module nesting 不對稱而錯算層數。
+    if framework == "phase7":
+        repo_root: Path | None = None
+        for parent in Path(__file__).resolve().parents:
+            if (parent / "CLAUDE.md").exists():
+                repo_root = parent
+                break
+        if repo_root is not None:
+            legacy_path = (
+                repo_root / "skills" / "sustainability-report" / "references"
+                / "compliance-checklist.md"
+            )
+            searched.append(legacy_path)
+            if legacy_path.exists():
+                return legacy_path, "legacy"
 
     raise FileNotFoundError(
-        f"compliance checklist not found in shared_kb or skills references "
-        f"(searched: {shared_path}, {legacy_path})"
+        "compliance checklist not found "
+        f"(framework={framework!r}, searched: "
+        + ", ".join(str(p) for p in searched)
+        + ")"
     )
 
 
@@ -406,9 +461,15 @@ def run_compliance_checklist(
             ``truncated=True`` 時顧問可分批跑。
 
     Returns:
-        ``ComplianceChecklistResult`` — summary + 前 N 項 detail。
+        ``ComplianceChecklistResult`` — summary + 前 N 項 detail。``source_path``
+        指向實際採用的檔案（client override / package shared_kb / legacy）。
     """
-    checklist_path = _resolve_checklist_path(framework)
+    # 先解析 client workspace（用於 brain DB + checklist override 偵測）。
+    # 若 client 不存在則繼續往下噴 FileNotFoundError — 與舊行為一致。
+    client_path = find_client_workspace(client_slug)
+    checklist_path, _source = _resolve_checklist_path(
+        framework, client_workspace=client_path,
+    )
     parsed = _parse_checklist(checklist_path)
     if not parsed:
         return ComplianceChecklistResult(
@@ -416,7 +477,7 @@ def run_compliance_checklist(
             items=[], truncated=False, source_path=str(checklist_path),
         )
 
-    client_path = find_client_workspace(client_slug)
+
     from susr.brain.engine import BrainEngine
     engine = BrainEngine.open(
         str(client_path / ".susr" / "db.sqlite"), load_sqlite_vec=False,
