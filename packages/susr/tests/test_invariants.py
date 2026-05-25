@@ -6,6 +6,10 @@
 
 R2 完成 assert_iN_* 實作後本檔即可全綠；在那之前 NotImplementedError
 是預期。測試是 R2 的接收契約（CLAUDE.md §6.1 hard rule）。
+
+R4：I1 拆為 I1a (topic → IRO) + I1b (IRO → Action) 後，
+測試也對應拆 ``test_i1a_*`` / ``test_i1b_*``；原 ``assert_i1_core_topic_coverage``
+保留 backward-compat 路徑專屬一條測試。
 """
 
 from __future__ import annotations
@@ -16,102 +20,95 @@ from susr.brain.edges import InvariantError
 from susr.brain.invariants import (
     assert_all,
     assert_i1_core_topic_coverage,
+    assert_i1a_core_topic_has_iro,
+    assert_i1b_iro_has_action,
     assert_i2_chapter_completeness,
     assert_i3_target_completeness,
     assert_i4_datapoint_source,
     assert_i5_emission_factor_validity,
+    check_all_invariants,
 )
 
 
-# ---------------------------------------------------------------------------
-# I1 — 核心議題必須有 Action（透過 topic_has_iro → iro_addressed_by 鏈）
-# ---------------------------------------------------------------------------
-
-
-def test_i1_core_topic_without_action_fails(tmp_brain) -> None:
-    """核心議題沒有 Action chain → 應 raise I1 violation。"""
-    tmp_brain.put_page(
-        slug="topics/E1",
+def _make_core_topic(brain, slug: str = "topics/E1", axis: str = "E") -> None:
+    """fixture helper — 建一個 materiality_tier='核心' 的 topic page。"""
+    brain.put_page(
+        slug=slug,
         entity_type="topic",
         title="氣候變遷",
         compiled_truth="",
-        file_path="entities/topics/E1.md",
+        file_path=f"entities/{slug}.md",
         frontmatter={
-            "slug": "E1",
+            "slug": slug.split("/")[-1],
             "name": "氣候變遷",
-            "axis": "E",
-            "impact_score": 4.5,
-            "financial_score": 4.0,
-            "materiality_tier": "核心",
-            "industry_specificity": "hotel",
-        },
-    )
-    # 沒建 IRO / Action chain — 預期 invariant 抓到
-    with pytest.raises(InvariantError, match="I1"):
-        assert_i1_core_topic_coverage(tmp_brain.conn)
-
-
-def test_i1_core_topic_with_full_chain_passes(tmp_brain) -> None:
-    """核心議題接上 IRO → Action chain 後 → 應通過。"""
-    tmp_brain.put_page(
-        slug="topics/E1",
-        entity_type="topic",
-        title="氣候變遷",
-        compiled_truth="",
-        file_path="entities/topics/E1.md",
-        frontmatter={
-            "slug": "E1",
-            "name": "氣候變遷",
-            "axis": "E",
+            "axis": axis,
             "impact_score": 4.5,
             "financial_score": 4.0,
             "materiality_tier": "核心",
         },
     )
-    tmp_brain.put_page(
-        slug="iros/E1-impact-emissions",
+
+
+def _make_iro(brain, slug: str, topic_slug_short: str) -> None:
+    brain.put_page(
+        slug=slug,
         entity_type="iro",
-        title="E1 impact: GHG emissions",
+        title=f"{topic_slug_short} impact",
         compiled_truth="",
-        file_path="entities/topics/E1/iro/impact-emissions.md",
+        file_path=f"entities/topics/{topic_slug_short}/iro/{slug.split('/')[-1]}.md",
         frontmatter={
-            "slug": "E1-impact-emissions",
-            "topic_slug": "E1",
+            "slug": slug.split("/")[-1],
+            "topic_slug": topic_slug_short,
             "type": "Impact",
             "category": "operational",
             "time_horizon": "M",
             "financial_magnitude": 3.0,
         },
     )
-    tmp_brain.put_page(
-        slug="actions/2025-energy-reduction",
+
+
+def _make_action(brain, slug: str, iro_slug_short: str) -> None:
+    brain.put_page(
+        slug=slug,
         entity_type="action",
-        title="2025 能耗減量計畫",
+        title="action",
         compiled_truth="",
-        file_path="projects/2025-sr/actions/energy-reduction.md",
+        file_path=f"projects/2025-sr/actions/{slug.split('/')[-1]}.md",
         frontmatter={
-            "slug": "2025-energy-reduction",
+            "slug": slug.split("/")[-1],
             "chapter_slug": "ch-environment",
-            "iro_addressed": ["E1-impact-emissions"],
+            "iro_addressed": [iro_slug_short],
             "budget": 1_000_000.0,
             "progress_pct": 0.2,
             "owner_department": "ESG",
             "period": "2025",
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# I1a — 核心議題必有 IRO（Phase 3 後應 pass）
+# ---------------------------------------------------------------------------
+
+
+def test_i1a_core_topic_without_iro_fails(tmp_brain) -> None:
+    """核心議題沒有 IRO → I1a 應 raise。"""
+    _make_core_topic(tmp_brain)
+    with pytest.raises(InvariantError, match="I1a"):
+        assert_i1a_core_topic_has_iro(tmp_brain.conn)
+
+
+def test_i1a_core_topic_with_iro_passes(tmp_brain) -> None:
+    """核心議題接上一個 IRO → I1a pass（即使 Action 還沒建）。"""
+    _make_core_topic(tmp_brain)
+    _make_iro(tmp_brain, "iros/E1-impact-emissions", "E1")
     tmp_brain.link("topics/E1", "topic_has_iro", "iros/E1-impact-emissions")
-    tmp_brain.link(
-        "iros/E1-impact-emissions",
-        "iro_addressed_by",
-        "actions/2025-energy-reduction",
-    )
-
-    # 應 NOT raise
-    assert_i1_core_topic_coverage(tmp_brain.conn)
+    # I1a pass：核心 topic 已有 IRO
+    assert_i1a_core_topic_has_iro(tmp_brain.conn)
 
 
-def test_i1_non_core_topic_without_action_passes(tmp_brain) -> None:
-    """重大 / 邊界議題沒 Action chain → I1 不該管，應通過。"""
+def test_i1a_non_core_topic_without_iro_passes(tmp_brain) -> None:
+    """非核心議題沒 IRO → I1a 不管，應 pass。"""
     tmp_brain.put_page(
         slug="topics/G3",
         entity_type="topic",
@@ -119,13 +116,81 @@ def test_i1_non_core_topic_without_action_passes(tmp_brain) -> None:
         compiled_truth="",
         file_path="entities/topics/G3.md",
         frontmatter={
-            "slug": "G3",
-            "name": "商業道德",
-            "axis": "G",
-            "impact_score": 3.0,
-            "financial_score": 3.0,
+            "slug": "G3", "name": "商業道德", "axis": "G",
+            "impact_score": 3.0, "financial_score": 3.0,
             "materiality_tier": "邊界",
         },
+    )
+    assert_i1a_core_topic_has_iro(tmp_brain.conn)
+
+
+# ---------------------------------------------------------------------------
+# I1b — IRO 必有 Action（Phase 5 後應 pass）
+# ---------------------------------------------------------------------------
+
+
+def test_i1b_iro_without_action_fails(tmp_brain) -> None:
+    """IRO 沒有 Action chain → I1b 應 raise。"""
+    _make_core_topic(tmp_brain)
+    _make_iro(tmp_brain, "iros/E1-impact-emissions", "E1")
+    tmp_brain.link("topics/E1", "topic_has_iro", "iros/E1-impact-emissions")
+    with pytest.raises(InvariantError, match="I1b"):
+        assert_i1b_iro_has_action(tmp_brain.conn)
+
+
+def test_i1b_iro_with_action_passes(tmp_brain) -> None:
+    """IRO 接上 Action → I1b pass。"""
+    _make_core_topic(tmp_brain)
+    _make_iro(tmp_brain, "iros/E1-impact-emissions", "E1")
+    _make_action(tmp_brain, "actions/2025-energy-reduction", "E1-impact-emissions")
+    tmp_brain.link("topics/E1", "topic_has_iro", "iros/E1-impact-emissions")
+    tmp_brain.link(
+        "iros/E1-impact-emissions",
+        "iro_addressed_by",
+        "actions/2025-energy-reduction",
+    )
+    assert_i1b_iro_has_action(tmp_brain.conn)
+
+
+def test_i1a_passes_with_iro_but_i1b_fails_without_action(tmp_brain) -> None:
+    """R4 關鍵驗證：Phase 3 完成（建 IRO）/ Phase 5 未做（無 Action）→
+    I1a pass / I1b fail 是合法中間態。"""
+    _make_core_topic(tmp_brain)
+    _make_iro(tmp_brain, "iros/E1-impact-emissions", "E1")
+    tmp_brain.link("topics/E1", "topic_has_iro", "iros/E1-impact-emissions")
+
+    # I1a：建好 IRO 應 pass
+    assert_i1a_core_topic_has_iro(tmp_brain.conn)
+
+    # I1b：Action 還沒建 → 應 raise
+    with pytest.raises(InvariantError, match="I1b"):
+        assert_i1b_iro_has_action(tmp_brain.conn)
+
+    # check_all_invariants 應只報 I1b 一條（invariant_name='I1b'）
+    violations = check_all_invariants(tmp_brain.conn)
+    names = sorted({v.invariant_name for v in violations})
+    assert "I1b" in names, f"expected I1b in violation names, got {names}"
+    assert "I1a" not in names, f"I1a should not violate, got {names}"
+
+
+def test_backward_compat_assert_i1(tmp_brain) -> None:
+    """舊 ``assert_i1_core_topic_coverage`` API 仍可呼叫（同時跑 I1a + I1b）。"""
+    # Empty brain：vacuously true，不該 raise
+    assert_i1_core_topic_coverage(tmp_brain.conn)
+
+    # 核心 topic 沒 IRO → 舊 API 也應 raise（因為 I1a 失敗）
+    _make_core_topic(tmp_brain)
+    with pytest.raises(InvariantError):
+        assert_i1_core_topic_coverage(tmp_brain.conn)
+
+    # 補上 IRO 與 Action → 舊 API 也應 pass
+    _make_iro(tmp_brain, "iros/E1-impact-emissions", "E1")
+    _make_action(tmp_brain, "actions/2025-energy-reduction", "E1-impact-emissions")
+    tmp_brain.link("topics/E1", "topic_has_iro", "iros/E1-impact-emissions")
+    tmp_brain.link(
+        "iros/E1-impact-emissions",
+        "iro_addressed_by",
+        "actions/2025-energy-reduction",
     )
     assert_i1_core_topic_coverage(tmp_brain.conn)
 

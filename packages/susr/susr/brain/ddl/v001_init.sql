@@ -23,7 +23,9 @@
 --   7.  vec_chunks            (sqlite-vec virtual table; hybrid search vec leg)
 --   8.  fts_pages             (FTS5 virtual table; hybrid search lexical leg)
 --   9.  v_target_completeness (I3 helper view — schema-level invariant)
---  10.  v_core_topic_action_coverage (I1 helper view)
+--  10a. v_i1a_core_topic_has_iro (I1a helper view — Phase 3 gate)
+--  10b. v_i1b_iro_has_action     (I1b helper view — Phase 5 gate)
+--  10c. v_core_topic_action_coverage (legacy alias — backward compat)
 --  11.  v_chapter_completeness (I2 helper view)
 -- =====================================================================
 
@@ -264,10 +266,66 @@ GROUP BY p.id;
 
 
 -- ---------------------------------------------------------------------
--- 10. v_core_topic_action_coverage — I1 helper view.
+-- 10a. v_i1a_core_topic_has_iro — I1a helper view (Phase 3 gate).
 -- ---------------------------------------------------------------------
--- Invariant I1: every topic with materiality_tier='核心' must reach at
--- least one Action via topic_has_iro → iro_addressed_by chain.
+-- Invariant I1a: every topic with materiality_tier='核心' must have
+-- at least one ``topic_has_iro`` edge to an IRO entity.  This is the
+-- first half of the original I1 chain; finishing Phase 3 SHOULD make
+-- this pass (顧問評分後就要建 IRO 骨架).
+--
+-- 違反條件：iro_count = 0
+CREATE VIEW IF NOT EXISTS v_i1a_core_topic_has_iro AS
+SELECT
+    p.id        AS topic_page_id,
+    p.slug      AS topic_slug,
+    p.title     AS topic_title,
+    p.tenant_id AS tenant_id,
+    COUNT(DISTINCT links.id) AS iro_count
+FROM pages p
+LEFT JOIN entity_attributes ea_tier
+    ON ea_tier.page_id = p.id
+   AND ea_tier.key = 'materiality_tier'
+LEFT JOIN links
+    ON links.src_page_id = p.id
+   AND links.edge_type = 'topic_has_iro'
+WHERE p.entity_type = 'topic'
+  AND p.deleted_at IS NULL
+  AND ea_tier.value = '核心'
+GROUP BY p.id;
+
+
+-- ---------------------------------------------------------------------
+-- 10b. v_i1b_iro_has_action — I1b helper view (Phase 5 gate).
+-- ---------------------------------------------------------------------
+-- Invariant I1b: every IRO entity must have at least one
+-- ``iro_addressed_by`` edge to an Action entity.  This is the second
+-- half of the original I1 chain; finishing Phase 5 SHOULD make this
+-- pass (顧問規劃完行動方案後就要鏈到 IRO).
+--
+-- 違反條件：action_count = 0
+CREATE VIEW IF NOT EXISTS v_i1b_iro_has_action AS
+SELECT
+    iro.id        AS iro_page_id,
+    iro.slug      AS iro_slug,
+    iro.title     AS iro_title,
+    iro.tenant_id AS tenant_id,
+    COUNT(DISTINCT links.id) AS action_count
+FROM pages iro
+LEFT JOIN links
+    ON links.src_page_id = iro.id
+   AND links.edge_type = 'iro_addressed_by'
+WHERE iro.entity_type = 'iro'
+  AND iro.deleted_at IS NULL
+GROUP BY iro.id;
+
+
+-- ---------------------------------------------------------------------
+-- 10c. v_core_topic_action_coverage — legacy alias (backward compat).
+-- ---------------------------------------------------------------------
+-- 舊 view 名稱保留 — R3 之前的 invariants 與 test 還在用。新代碼請改用
+-- v_i1a_core_topic_has_iro + v_i1b_iro_has_action 個別 check（R4 拆分）。
+--
+-- 語意：核心 topic → IRO → Action 兩段鏈，缺任一段就 fail（action_count=0）。
 CREATE VIEW IF NOT EXISTS v_core_topic_action_coverage AS
 SELECT
     t.id   AS topic_id,

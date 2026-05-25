@@ -1,21 +1,31 @@
 """susr.brain.invariants — 5 connectivity invariants (fail-closed, spec §2.5).
 
+R4 split: 原本的 I1（core topic → IRO → Action 雙鏈耦合）被拆成兩段，讓
+Phase 3 完成（建好 IRO 但 Action 還沒做）成為合法中間態。
+
 Mapping:
-    I1 core topic→Action chain    view v_core_topic_action_coverage
-    I2 chapter completeness       view v_chapter_completeness
-    I3 target 4 required fields   view v_target_completeness
-    I4 datapoint→source_doc       app SQL (links + pages join)
-    I5 emission factor in window  app SQL (date range vs datapoint.year)
+    I1a core topic has IRO         view v_i1a_core_topic_has_iro
+    I1b IRO has Action             view v_i1b_iro_has_action
+    I1 (legacy)                    = I1a + I1b 同時跑（backward compat）
+    I2 chapter completeness        view v_chapter_completeness
+    I3 target 4 required fields    view v_target_completeness
+    I4 datapoint→source_doc        app SQL (links + pages join)
+    I5 emission factor in window   app SQL (date range vs datapoint.year)
 
 API:
     assert_iX_* / assert_all     raise InvariantError on first/all failure
     check_all_invariants         return list[InvariantViolation], never raise
+
+Phase gating (spec §2.5)：
+    - Phase 3 完成後：I1a + I2 + I3 應 pass；I1b 仍 fail 屬合法中間態
+    - Phase 5 完成後：I1b 也 pass（IRO 都鏈到 Action）
 """
 
 from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
+from typing import Optional
 
 from susr.brain.edges import InvariantError
 
@@ -25,11 +35,28 @@ from susr.brain.edges import InvariantError
 
 @dataclass(frozen=True)
 class InvariantViolation:
-    """One specific invariant breach found in the DB."""
+    """One specific invariant breach found in the DB.
 
-    invariant: str  # 'I1' .. 'I5'
+    Attributes:
+        invariant: 廣義 invariant code（'I1' / 'I2' .. 'I5'）。
+            為 backward compatibility，I1a / I1b violation 此欄位仍填 'I1'，
+            細分鍵見 ``invariant_name``。
+        invariant_name: 精確的 invariant 名稱（'I1a' / 'I1b' / 'I2' .. 'I5'）。
+            R4 新增 — 區分拆出的子 invariant。
+        page_slug: 違反的 page slug。
+        detail: 人讀說明。
+    """
+
+    invariant: str  # 'I1' .. 'I5'（廣義 — backward compat 用）
     page_slug: str
     detail: str
+    invariant_name: str = ""  # 'I1a' / 'I1b' / 'I2' / 'I3' / 'I4' / 'I5'
+
+    def __post_init__(self) -> None:
+        # 若呼叫端只給 `invariant`（舊 R3 caller），自動鏡像到 invariant_name。
+        # frozen=True 用 object.__setattr__ 繞 frozen 限制。
+        if not self.invariant_name:
+            object.__setattr__(self, "invariant_name", self.invariant)
 
 
 # --- Helpers ---------------------------------------------------------------
@@ -49,27 +76,116 @@ def _raise_if(violations: list[InvariantViolation], code: str, headline: str) ->
     raise InvariantError(f"{code} violated: {len(slugs)} {headline}: {_format(slugs)}")
 
 
-# --- I1: core topic action coverage (view v_core_topic_action_coverage) ---
+# --- I1a: core topic has IRO (view v_i1a_core_topic_has_iro) --------------
 
 
-def _i1_violations(conn: sqlite3.Connection) -> list[InvariantViolation]:
-    rows = conn.execute(
-        "SELECT topic_slug FROM v_core_topic_action_coverage "
-        "WHERE action_count = 0 ORDER BY topic_slug"
-    ).fetchall()
+def _i1a_violations(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> list[InvariantViolation]:
+    """I1a：核心 topic 必有 IRO（Phase 3 後應 pass）。"""
+    if tenant_id is None:
+        rows = conn.execute(
+            "SELECT topic_slug FROM v_i1a_core_topic_has_iro "
+            "WHERE iro_count = 0 ORDER BY topic_slug"
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT topic_slug FROM v_i1a_core_topic_has_iro "
+            "WHERE iro_count = 0 AND tenant_id IS ? ORDER BY topic_slug",
+            [tenant_id],
+        ).fetchall()
     return [
         InvariantViolation(
             invariant="I1",
             page_slug=str(r[0]),
-            detail="core topic has no Action via topic_has_iro→iro_addressed_by chain",
+            detail="core topic has no IRO (missing topic_has_iro edge)",
+            invariant_name="I1a",
         )
         for r in rows
     ]
 
 
-def assert_i1_core_topic_coverage(conn: sqlite3.Connection) -> None:
-    """I1: every materiality_tier='核心' topic must reach an Action via IRO chain."""
-    _raise_if(_i1_violations(conn), "I1", "核心 topic(s) have no Action via IRO chain")
+def assert_i1a_core_topic_has_iro(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> None:
+    """I1a：核心 topic 必有 IRO（Phase 3 後應 pass）。
+
+    fail-closed → raise ``InvariantError``。Phase 3 完成的合法條件之一。
+    """
+    _raise_if(
+        _i1a_violations(conn, tenant_id),
+        "I1a",
+        "核心 topic(s) have no IRO (topic_has_iro edge missing)",
+    )
+
+
+# --- I1b: IRO has Action (view v_i1b_iro_has_action) ----------------------
+
+
+def _i1b_violations(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> list[InvariantViolation]:
+    """I1b：IRO 必有 Action（Phase 5 後應 pass）。"""
+    if tenant_id is None:
+        rows = conn.execute(
+            "SELECT iro_slug FROM v_i1b_iro_has_action "
+            "WHERE action_count = 0 ORDER BY iro_slug"
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT iro_slug FROM v_i1b_iro_has_action "
+            "WHERE action_count = 0 AND tenant_id IS ? ORDER BY iro_slug",
+            [tenant_id],
+        ).fetchall()
+    return [
+        InvariantViolation(
+            invariant="I1",
+            page_slug=str(r[0]),
+            detail="IRO has no Action (missing iro_addressed_by edge)",
+            invariant_name="I1b",
+        )
+        for r in rows
+    ]
+
+
+def assert_i1b_iro_has_action(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> None:
+    """I1b：IRO 必有 Action（Phase 5 後應 pass）。
+
+    fail-closed → raise ``InvariantError``。Phase 3 完成時此項仍 fail 屬合法
+    中間態（顧問還沒做行動方案）。
+    """
+    _raise_if(
+        _i1b_violations(conn, tenant_id),
+        "I1b",
+        "IRO(s) have no Action (iro_addressed_by edge missing)",
+    )
+
+
+# --- I1 (legacy): combined core topic action coverage --------------------
+
+
+def _i1_violations(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> list[InvariantViolation]:
+    """[deprecated] 同時跑 I1a + I1b — 等於舊的 v_core_topic_action_coverage 語意。"""
+    return [
+        *_i1a_violations(conn, tenant_id),
+        *_i1b_violations(conn, tenant_id),
+    ]
+
+
+def assert_i1_core_topic_coverage(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> None:
+    """[deprecated] 同時跑 I1a + I1b（向下相容 R3 caller）。
+
+    新代碼請改用 ``assert_i1a_core_topic_has_iro`` / ``assert_i1b_iro_has_action``
+    分別 check，讓 Phase 3 完成（I1a pass / I1b 仍 fail）成為可區分的合法中間態。
+    """
+    assert_i1a_core_topic_has_iro(conn, tenant_id)
+    assert_i1b_iro_has_action(conn, tenant_id)
 
 
 # --- I2: chapter completeness (view v_chapter_completeness) ---------------
@@ -267,10 +383,18 @@ def assert_i5_emission_factor_validity(conn: sqlite3.Connection) -> None:
 # --- Aggregate runners -----------------------------------------------------
 
 
-def check_all_invariants(conn: sqlite3.Connection) -> list[InvariantViolation]:
-    """Run I1..I5; return every violation; never raises.  Used by MCP health_check."""
+def check_all_invariants(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> list[InvariantViolation]:
+    """Run I1a, I1b, I2..I5; return every violation; never raises.
+
+    R4 拆分：I1 替換為 I1a (topic→IRO) + I1b (IRO→Action)，個別 check。
+    `InvariantViolation.invariant` 仍填 'I1'（backward compat MCP health_check
+    payload），新增 `invariant_name` 欄位 ('I1a' / 'I1b') 區分子 invariant。
+    """
     return [
-        *_i1_violations(conn),
+        *_i1a_violations(conn, tenant_id),
+        *_i1b_violations(conn, tenant_id),
         *_i2_violations(conn),
         *_i3_violations(conn),
         *_i4_violations(conn),
@@ -278,17 +402,22 @@ def check_all_invariants(conn: sqlite3.Connection) -> list[InvariantViolation]:
     ]
 
 
-def assert_all(conn: sqlite3.Connection) -> None:
-    """Run I1..I5; aggregate every violation into one InvariantError.
-    Used by BrainEngine.commit_phase as the fail-closed gate before snapshot."""
-    violations = check_all_invariants(conn)
+def assert_all(
+    conn: sqlite3.Connection, tenant_id: Optional[str] = None
+) -> None:
+    """Run I1a, I1b, I2..I5; aggregate every violation into one InvariantError.
+
+    Used by BrainEngine.commit_phase as the fail-closed gate before snapshot.
+    報錯 grouping 改用 ``invariant_name``（區分 I1a / I1b）。
+    """
+    violations = check_all_invariants(conn, tenant_id)
     if not violations:
         return
-    by_invariant: dict[str, list[str]] = {}
+    by_name: dict[str, list[str]] = {}
     for v in violations:
-        by_invariant.setdefault(v.invariant, []).append(v.page_slug)
+        by_name.setdefault(v.invariant_name or v.invariant, []).append(v.page_slug)
     parts = [
         f"{name}({len(slugs)}): {_format(slugs)}"
-        for name, slugs in sorted(by_invariant.items())
+        for name, slugs in sorted(by_name.items())
     ]
     raise InvariantError("invariant violations — " + " | ".join(parts))
