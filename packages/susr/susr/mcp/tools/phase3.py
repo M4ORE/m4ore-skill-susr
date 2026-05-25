@@ -10,6 +10,21 @@ Claude Desktop chat.  Tools (spec §6.2):
 
 Markdown files in the per-client repo are source of truth (CLAUDE.md §8
 decision 1); these tools write markdown directly.
+
+TOC (4.6.1 (b)：硬門檻 500 行使用 TL;DR+index 對應)：
+    L1   — module docstring + imports + _FRONTMATTER_RE
+    L30+ — md helpers: _read_md / _write_md / _now / _append_timeline_md
+    L58+ — tier resolution: _classify_tier / resolve_materiality_tier
+    L120+ — Tool 1: search_topics_universe + TopicCandidate
+    L230+ — Tool 2: score_topic_dual_axis + ImpactScores/FinancialScores
+    L280+ — Tool 3: generate_materiality_matrix + MaterialityMatrix + TierOverride
+    L450+ — Tool 4: stakeholder_engagement_helper + EngagementRecord
+    L550+ — register(server) + __all__
+
+R3 收斂：frontmatter explicit tier vs `_classify_tier` 二套標準衝突
+（walkthroughs/lealea-5364-phase3.md §3.265 + §7 backlog #3）由
+``resolve_materiality_tier`` 統一仲裁，顧問 explicit 優先 + 不一致時
+emit warning 收進 ``MaterialityMatrix.tier_overrides``。
 """
 
 from __future__ import annotations
@@ -56,11 +71,63 @@ def _now() -> str:
 
 
 def _classify_tier(impact: float, financial: float) -> Literal["核心", "重大", "邊界"]:
+    """嚴格雙軸 auto-suggest：兩軸皆 ≥4 才為核心，任一軸 ≥3.5 為重大。"""
     if impact >= 4 and financial >= 4:
         return "核心"
     if impact >= 3.5 or financial >= 3.5:
         return "重大"
     return "邊界"
+
+
+_VALID_TIERS: tuple[str, ...] = ("核心", "重大", "邊界")
+
+
+def resolve_materiality_tier(
+    frontmatter_tier: Optional[str],
+    impact_score: Optional[float],
+    financial_score: Optional[float],
+) -> tuple[Literal["核心", "重大", "邊界"], Optional[str]]:
+    """收斂 frontmatter explicit tier 與 `_classify_tier` 自動建議的兩套標準。
+
+    回傳 ``(resolved_tier, warning_message_or_None)``。
+
+    決策樹（5 條）：
+
+    1. 兩軸分數任一為 None → 視為尚未評分，回 ``("邊界", None)``。
+    2. frontmatter_tier 為 None → 直接採 auto_tier（無 warning）。
+    3. frontmatter_tier 為非法值（不在 {"核心","重大","邊界"}）→ fallback
+       回 auto_tier 並附 warning「無效 tier，已退回 auto-suggested」。
+    4. frontmatter_tier == auto_tier → 採 frontmatter（無 warning）。
+    5. frontmatter_tier != auto_tier → **顧問 explicit 優先**（honor frontmatter），
+       但 emit warning 標記與 auto-suggested 不一致，供 timeline / 矩陣審計用。
+
+    為何「顧問覆寫」優先而非 auto 優先：
+        SP1-004 SOP §4 的「核心(Impact 軸)」/「核心(Financial 軸)」是顧問
+        基於行業特殊性 + 利害關係人議合脈絡做出的判斷，自動式 ≥4 嚴格門檻
+        無法表達這層 nuance。susr 定位為 co-pilot（CLAUDE.md §1），顧問
+        判斷在前；但「靜默接受」會掩蓋衝突，故仍 emit warning 上 audit trail。
+    """
+    if impact_score is None or financial_score is None:
+        return "邊界", None
+    auto_tier = _classify_tier(float(impact_score), float(financial_score))
+
+    if frontmatter_tier is None:
+        return auto_tier, None
+
+    fm = str(frontmatter_tier).strip()
+    if fm not in _VALID_TIERS:
+        return auto_tier, (
+            f'frontmatter materiality_tier="{frontmatter_tier}" 為非法值，'
+            f'已退回 auto-suggested "{auto_tier}"'
+        )
+
+    if fm == auto_tier:
+        return auto_tier, None  # type: ignore[return-value]
+
+    return fm, (  # type: ignore[return-value]
+        f'顧問 explicit "{fm}" vs auto-suggested "{auto_tier}" '
+        f'(impact={impact_score:.2f}, financial={financial_score:.2f}) — kept explicit'
+    )
 
 
 def _append_timeline_md(body: str, action: str, payload: dict, actor: str) -> tuple[str, int]:
@@ -244,6 +311,22 @@ def score_topic_dual_axis(
 # ---------- Tool 3: generate_materiality_matrix ----------
 
 
+class TierOverride(BaseModel):
+    """顧問 frontmatter explicit tier 與 `_classify_tier` auto-suggest 不一致的紀錄。
+
+    每筆代表一個 topic 的覆寫事件 — 顧問 explicit 已被 honor，但 auto-suggested
+    被保留作 audit footnote，方便在矩陣 .md 與 timeline 兩處重複驗證。
+    """
+
+    slug: str
+    resolved_tier: Literal["核心", "重大", "邊界"]
+    auto_suggested_tier: Literal["核心", "重大", "邊界"]
+    frontmatter_tier: Optional[str] = None
+    impact_score: float
+    financial_score: float
+    warning: str
+
+
 class MaterialityMatrix(BaseModel):
     matrix_md_path: str
     matrix_svg_path: str
@@ -252,6 +335,7 @@ class MaterialityMatrix(BaseModel):
     border_topics: list[str]
     invariants_passed: bool
     invariant_violations: list[str] = []
+    tier_overrides: list[TierOverride] = []
 
 
 def _render_svg(rows: list[dict]) -> str:
@@ -297,6 +381,15 @@ def _render_svg(rows: list[dict]) -> str:
 
 
 def _collect_scored_topics(client_path: Path) -> list[dict]:
+    """掃過 entities/topics/*.md，逐檔透過 ``resolve_materiality_tier`` 收斂 tier。
+
+    每筆 dict 帶四個 tier-related 欄位：
+
+    - ``tier``：最終採用的 tier（honor frontmatter explicit，若有的話）
+    - ``auto_tier``：由 ``_classify_tier`` 純粹基於兩軸分數算出的建議
+    - ``frontmatter_tier``：原始 frontmatter 值（可能為 None）
+    - ``tier_warning``：若 frontmatter 與 auto 不一致或為非法值才有值，否則 None
+    """
     topics_dir = client_path / "entities" / "topics"
     out: list[dict] = []
     if not topics_dir.exists():
@@ -311,11 +404,20 @@ def _collect_scored_topics(client_path: Path) -> list[dict]:
             continue
         slug = fm.get("slug", md.stem)
         iro_dir = topics_dir / slug / "iro"
+        fm_tier_raw = fm.get("materiality_tier")
+        fm_tier = str(fm_tier_raw) if fm_tier_raw is not None else None
+        resolved_tier, warning = resolve_materiality_tier(fm_tier, i_s, f_s)
         out.append(
             {
-                "slug": slug, "name": fm.get("name", md.stem), "axis": fm.get("axis", ""),
-                "impact_score": i_s, "financial_score": f_s,
-                "tier": fm.get("materiality_tier") or _classify_tier(i_s, f_s),
+                "slug": slug,
+                "name": fm.get("name", md.stem),
+                "axis": fm.get("axis", ""),
+                "impact_score": i_s,
+                "financial_score": f_s,
+                "tier": resolved_tier,
+                "auto_tier": _classify_tier(i_s, f_s),
+                "frontmatter_tier": fm_tier,
+                "tier_warning": warning,
                 "iro_link_count": sum(1 for _ in iro_dir.glob("*.md")) if iro_dir.exists() else 0,
             }
         )
@@ -325,7 +427,13 @@ def _collect_scored_topics(client_path: Path) -> list[dict]:
 def generate_materiality_matrix(
     client_slug: str, year: int, include_svg: bool = True,
 ) -> MaterialityMatrix:
-    """Phase 3 step 3 — render matrix .md/.svg + best-effort invariant check."""
+    """Phase 3 step 3 — render matrix .md/.svg + best-effort invariant check.
+
+    Tier 收斂行為：`_collect_scored_topics` 透過 ``resolve_materiality_tier``
+    把 frontmatter explicit tier 與 ``_classify_tier`` auto-suggest 對齊；
+    若顧問 explicit 與 auto-suggested 不一致則 honor explicit 但收進
+    ``tier_overrides`` 欄位（並寫入矩陣 .md 的「Tier 覆寫」段落供審計）。
+    """
     client_path = find_client_workspace(client_slug)
     rows = _collect_scored_topics(client_path)
     core = sorted(r["slug"] for r in rows if r["tier"] == "核心")
@@ -335,6 +443,19 @@ def generate_materiality_matrix(
         f"I1: core topic {r['slug']} has no IRO chain"
         for r in rows
         if r["tier"] == "核心" and r["iro_link_count"] == 0
+    ]
+    tier_overrides = [
+        TierOverride(
+            slug=r["slug"],
+            resolved_tier=r["tier"],
+            auto_suggested_tier=r["auto_tier"],
+            frontmatter_tier=r.get("frontmatter_tier"),
+            impact_score=r["impact_score"],
+            financial_score=r["financial_score"],
+            warning=r["tier_warning"],
+        )
+        for r in rows
+        if r.get("tier_warning")
     ]
     project_dir = client_path / "projects" / f"{year}-sustainability-report"
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -347,6 +468,7 @@ def generate_materiality_matrix(
         "",
         f"- 核心議題：{len(core)} / 重大議題：{len(material)} / 邊界議題：{len(border)}",
         f"- 不變量檢查：{'通過' if not violations else '失敗 ('+str(len(violations))+')'}",
+        f"- Tier 覆寫：{len(tier_overrides)}（顧問 explicit ≠ auto-suggested）",
         "",
         "## 議題評分表",
         "",
@@ -360,6 +482,10 @@ def generate_materiality_matrix(
         )
     if violations:
         lines += ["", "## 不變量違反", ""] + [f"- {v}" for v in violations]
+    if tier_overrides:
+        lines += ["", "## Tier 覆寫（顧問 explicit honored）", ""]
+        for ov in tier_overrides:
+            lines.append(f"- `{ov.slug}`：{ov.warning}")
     if include_svg:
         lines += ["", "## 矩陣圖", "", f"![matrix]({svg_path.name})"]
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -370,6 +496,7 @@ def generate_materiality_matrix(
         matrix_svg_path=str(svg_path) if include_svg else "",
         core_topics=core, material_topics=material, border_topics=border,
         invariants_passed=not violations, invariant_violations=violations,
+        tier_overrides=tier_overrides,
     )
 
 
@@ -446,7 +573,8 @@ def register(server) -> None:  # noqa: ANN001
 
 __all__ = [
     "TopicCandidate", "ImpactScores", "FinancialScores", "TopicScoreResult",
-    "MaterialityMatrix", "EngagementRecord",
+    "MaterialityMatrix", "TierOverride", "EngagementRecord",
     "search_topics_universe", "score_topic_dual_axis",
-    "generate_materiality_matrix", "stakeholder_engagement_helper", "register",
+    "generate_materiality_matrix", "stakeholder_engagement_helper",
+    "resolve_materiality_tier", "register",
 ]

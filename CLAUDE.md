@@ -632,3 +632,47 @@ pip install susr                # 一次性
 → §6.1 hard rule（每個 feature 必有測試）**還不夠** —— **每個 milestone 必須有對應的 Layer 5 end-to-end walkthrough acceptance test**。本 Step 2-B 模式應該成為未來 milestone 收尾的標配（CLAUDE.md §6 後續可考慮加 Layer 5 章節）。
 
 **下一步**：R3 P0 三項優先（ingest tolerance / IRO tool / materiality_tier 收斂）— 可派 3 個 subagent 並行
+
+### 2026-05-25 · R3 P0 三項補強完成（218/218 tests pass）
+
+3 個並行 subagent 收尾 Step 2-B walkthrough 揭露的 P0 缺口：
+
+**R3-A Ingest tolerance**（`packages/susr/susr/brain/ingest.py` 299 行）：
+- `normalize_frontmatter()` + `ingest_markdown_file()` + `ingest_directory()`
+- 5 Literal token maps（~30 英中對應：boundary/axis/tier/IRO type/time_horizon/embedding_policy）
+- 5 type coerce 規則（date→ISO str、Likert→float、int→str 等）
+- 真實 lealea markdown 100% ingest 可用
+- 22 new tests
+
+**R3-B IRO 建立 tool**（`packages/susr/susr/mcp/tools/iro.py` 331 行 — 新檔避過 phase3.py 行數膨脹）：
+- `link_topic_to_iro` tool 建 IRO entity + `topic_has_iro` edge + timeline_entry
+- Idempotent (topic, type, name)
+- 8 new tests，含「I1 對 lealea 9 core topic 補 IRO 後驗證」
+- **⚠️ I1 invariant 完整 close 仍需 `link_iro_to_action`**（Phase 5 範疇）— R3-B 半開狀態合理
+
+**R3-C materiality_tier 收斂**（`packages/susr/susr/mcp/tools/phase3.py` +134 行 → 580 行，符合 §4.6.1 (b) TL;DR+TOC 例外）：
+- `resolve_materiality_tier()` 5 條決策樹：顧問 explicit 優先 + warning trail
+- `MaterialityMatrix` 加 `tier_overrides: list[TierOverride]` 欄位
+- Lealea：9 核心 (6 warn, 3 align with 嚴格雙軸 ≥4)
+- 8 new tests
+
+**並行衝突**：零 — R3-B 用獨立 iro.py、R3-A 用獨立 ingest.py、R3-C 只動 phase3.py。檔案邊界清晰。
+
+**測試成長**：180 → 218（+38）
+
+**MVP success criteria 進展**：
+- 雙軸評分 ✅（已有）
+- 矩陣 (md+SVG) ✅（已有）
+- IRO 對應 ⚠️ **半開**（IRO entity 可建 + topic_has_iro edge 存在，但 I1 完整 closure 需 IRO→Action 鏈）— 對 Phase 3 MVP 屬合理中間態
+
+**R4 後續議題**（從三 agent reports）：
+- R4a I1 view 拆 I1a (topic→IRO) + I1b (IRO→Action)，讓 Phase 3 完成是合法中間態
+- R4b 新增 `link_iro_to_action` tool（Phase 5）
+- R4c brain page slug 雙慣例統一（prefixed vs unqualified）
+- R4d timeline 雙寫不對稱（markdown body vs brain table）統一
+- R4e IRO idempotency 用 slug 唯一性而非 (topic, type, name)
+
+**下一步建議**：
+1. **重跑 Step 2-B walkthrough** 驗證 P0 補強對端到端的真實影響（subagent，~15 分）
+2. 或：直接進 Step 3（references → shared_kb/data 遷移）+ Layer 4 embedding benchmark（user 本機跑）
+3. 或：補 R4a/R4b 讓 I1 真正全綠
