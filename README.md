@@ -12,7 +12,7 @@
 ## TL;DR
 
 susr v0.1 是**本地優先（local-first）+ MCP-native + Markdown source of truth** 的 ESG 顧問 Co-pilot。
-顧問 `pip install susr` 後，在 Claude Desktop 聊天介面操作 19 個 MCP tools，
+顧問 `pip install susr` 後，在 Claude Desktop 聊天介面操作 20 個 MCP tools，
 跑完 Phase 3 雙重重大性評估 / Phase 6 報告書 payload 準備 / Phase 7 差距分析。
 資料以 Markdown + SQLite + sqlite-vec 留在顧問本機，符合「客戶資料不出機」原則。
 
@@ -140,7 +140,7 @@ Phase 8  Filing & Improve     ── ❌ 未實作
 四層內部結構（對應三原則文件的「智能層」+「輸入層」+「顧問專屬功能」）：
 
 1. **`susr.brain`** — SQLite + sqlite-vec + FTS5 引擎；17 個 entity types、19 條 typed edges、6 條連結性 invariants（含 R4 拆出的 I1a/I1b），page_versions snapshot + append-only timeline
-2. **`susr.mcp.tools`** — 19 個 MCP tools 跨 Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action
+2. **`susr.mcp.tools`** — 20 個 MCP tools 跨 Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action / KPI
 3. **`susr.shared_kb.data`** — pip ship 的常駐知識庫（frameworks / industry-packs / factors / glossary / regulations / checklists / prompts）
 4. **`skills/sustainability-report/`** — Claude Code 用對話路徑（純 SOP guidance，與 brain 並行獨立）
 
@@ -153,7 +153,7 @@ Phase 8  Filing & Improve     ── ❌ 未實作
 | 指標 | 數字 |
 |---|---|
 | Entity 多樣性 | 17 types |
-| Lealea pages ingested | 95（28 topics + 14 IROs + 14 actions + 5 chapters + 14 frameworks + 7 stakeholders + 8 KPIs + 3 targets + 2 governance） |
+| Lealea pages ingested | 99（28 topics + 14 IROs + 14 actions + 5 chapters + 14 frameworks + 7 stakeholders + 9 KPIs + 6 targets + 2 governance） |
 | Typed edges | 70（含 14 `topic_has_iro` + 14 `iro_addressed_by` + 19 `chapter_conforms_to` + 20 `discloses_topic` + 3 `target_measures`） |
 | Layer 3 invariants | **6/6 全綠**（I1a / I1b / I2 / I3 / I4 / I5 ✅，R8-3 收尾 chapter framework 一致性） |
 | 端到端測試 | 293 passed + 2 skipped |
@@ -281,7 +281,7 @@ Zero shell commands after that. Full install path: [`docs/user-guide/README.md`]
 Four internal layers:
 
 1. **`susr.brain`** — SQLite + sqlite-vec + FTS5; 17 entity types, 19 typed edges, 6 connectivity invariants (incl. R4-split I1a / I1b), `page_versions` snapshot + append-only `timeline_entries`
-2. **`susr.mcp.tools`** — 19 MCP tools across Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action
+2. **`susr.mcp.tools`** — 20 MCP tools across Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action / KPI
 3. **`susr.shared_kb.data`** — pip-shipped knowledge base (frameworks / industry-packs / emission factors / glossary / regulations / checklists / prompts)
 4. **`skills/sustainability-report/`** — Claude Code conversational SOP path (runs in parallel with brain, independent)
 

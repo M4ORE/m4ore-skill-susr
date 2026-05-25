@@ -162,6 +162,28 @@ pip install "susr[embeddings-bge]"
 
 ---
 
+## 6.5 場景 4：顧問經驗壓過分數（tier 衝突 audit trail）
+
+**情境**：嚴格雙軸要求「Impact ≥ 4 **且** Financial ≥ 4」才算核心。但顧問認為 S7 顧客隱私（3.5 / 4.0）與 G2 誠信（3.5 / 4.0）就算 Impact 軸 = 3.5 仍然策略上重要 —— 旅館業 peer（晶華、國賓）都列前 5、且金管會法遵環境讓「邊界」是錯誤訊號。
+
+**你**：
+> S7 顧客隱私我要 explicit override 為核心，理由是 peer 都列前 5 + 個資法罰款上限近兩年連跳兩級。
+
+**Claude Desktop**（呼叫 `score_topic_dual_axis` 或 `generate_materiality_matrix`）：
+> S7-customer-privacy tier 收斂結果：
+> - Auto-suggested: 邊界（雙軸並非都 ≥ 4）
+> - Frontmatter explicit: 核心（顧問判斷）
+> - **Resolved: 核心**（honor explicit）
+> - tier_resolution_warning: `S7-customer-privacy: auto-suggested=邊界, explicit=核心 — honored explicit; rationale 已寫入 audit trail`
+>
+> 已寫入 `materiality-2025.md` 的「Tier 覆寫」段落供審計。
+
+lealea 5364 的 9 個核心議題中 **6 個觸發 warning**（S1 / S4 / S7 / S8 / G2 / G3 — 雙軸並非都 ≥ 4），**3 個 auto/explicit 一致**（E1 4.5/4.0 / E2 4.0/4.0 / S6 4.5/4.5）。所有 warning 都會列在 `MaterialityMatrix.tier_overrides[]`，第三方確信時可直接拉證據鏈：哪個顧問、何時、為何 override。
+
+> （幕後：`resolve_materiality_tier(frontmatter_tier='核心', impact=3.5, financial=4.0)` 走決策樹 4：explicit 存在且與 auto 不一致 → honor explicit + emit warning。**Co-pilot 不替顧問判斷**，但提供 audit trail。）
+
+---
+
 ## 7. 跑 Phase 7 連結性檢查（10 秒）
 
 **你**：
