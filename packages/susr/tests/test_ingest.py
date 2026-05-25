@@ -248,13 +248,30 @@ def test_ingest_directory_lealea_entities(tmp_db, lealea_root: Path) -> None:
     assert "kpi" in type_set
 
 
-def test_ingest_directory_strict_mode_raises(tmp_db, lealea_root: Path) -> None:
-    """``strict=True`` 時遇到 schema-fail 檔就 raise（讓 caller 知道）。"""
-    # tcfd-net-zero-2050.md 有 baseline_value: null（schema 要 float）—
-    # 開 strict 一定會炸；不開不會。
-    targets_dir = lealea_root / "entities" / "targets"
+def test_ingest_directory_strict_mode_raises(tmp_db, tmp_path: Path) -> None:
+    """``strict=True`` 時遇到 schema-fail 檔就 raise（讓 caller 知道）。
+
+    用 tmp_path 寫一份 synthetic broken target（baseline_value 必填但缺漏）
+    驗證 strict 行為。原本依賴 lealea fixture null placeholder，R6-A 已修
+    fixture 改 0.0，所以改用 synthetic。
+    """
+    broken_dir = tmp_path / "entities" / "targets"
+    broken_dir.mkdir(parents=True)
+    (broken_dir / "broken.md").write_text(
+        "---\n"
+        "slug: broken-target\n"
+        "entity_type: target\n"
+        "kpi_slug: ghg-scope1\n"
+        "# baseline_value 缺漏 — Pydantic 必填\n"
+        "baseline_year: 2024\n"
+        "target_value: 50\n"
+        "target_year: 2030\n"
+        "verification_path: third-party\n"
+        "---\n\n# Broken\n",
+        encoding="utf-8",
+    )
     with pytest.raises(Exception):  # noqa: B017 — Pydantic ValidationError
-        ingest_directory(tmp_db, targets_dir, strict=True)
+        ingest_directory(tmp_db, broken_dir, strict=True)
 
 
 def test_ingest_skips_legacy_dir(tmp_db, lealea_root: Path) -> None:
@@ -330,3 +347,72 @@ def test_normalize_output_passes_pydantic_for_lealea_topic(
     fm.pop("entity_type", None)
     normalized = normalize_frontmatter(fm, "topic")
     validate_frontmatter("topic", normalized)
+
+
+# ---------------------------------------------------------------------------
+# R6-B: target schema alias normalization
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_target_value_pct_reduction_alias() -> None:
+    """target_value_pct_reduction → target_value (lealea fixture 真實命中)."""
+    fm = {
+        "slug": "scope12-reduction-2030",
+        "kpi_slug": "ghg-scope1",
+        "baseline_year": 2024,
+        "baseline_value": 100.0,
+        "target_value_pct_reduction": 30,
+        "target_year": 2030,
+        "verification_path": "third-party assurance",
+    }
+    out = normalize_frontmatter(fm, "target")
+    assert "target_value_pct_reduction" not in out
+    assert out["target_value"] == 30
+
+
+def test_normalize_target_year_by_alias() -> None:
+    """by_year → target_year."""
+    fm = {"slug": "t", "kpi_slug": "k", "by_year": 2030,
+          "baseline_year": 2024, "baseline_value": 0,
+          "target_value": 50, "verification_path": "x"}
+    out = normalize_frontmatter(fm, "target")
+    assert "by_year" not in out
+    assert out["target_year"] == 2030
+
+
+def test_normalize_target_alias_no_overwrite_canonical() -> None:
+    """alias + canonical 同時存在 → preserve canonical，drop alias."""
+    fm = {
+        "slug": "t", "kpi_slug": "k",
+        "baseline_year": 2024, "baseline_value": 0,
+        "target_value": 99,                  # canonical
+        "target_value_pct_reduction": 30,     # alias — 衝突
+        "target_year": 2030, "verification_path": "x",
+    }
+    out = normalize_frontmatter(fm, "target")
+    assert "target_value_pct_reduction" not in out
+    assert out["target_value"] == 99  # canonical 保留
+
+
+def test_normalize_target_idempotent() -> None:
+    """normalize(normalize(x)) == normalize(x)."""
+    fm = {"slug": "t", "kpi_slug": "k",
+          "baseline_year": 2024, "baseline_value": 0,
+          "target_value_pct_reduction": 30,
+          "target_year": 2030, "verification_path": "x"}
+    once = normalize_frontmatter(fm, "target")
+    twice = normalize_frontmatter(once, "target")
+    assert once == twice
+
+
+def test_ingest_lealea_targets_now_succeeds(tmp_db) -> None:
+    """ingest_directory 對 lealea entities/targets/ — 之前 0 → 現在 3."""
+    repo_root = Path(__file__).resolve().parents[3]
+    targets_dir = repo_root / "examples" / "lealea-5364" / "entities" / "targets"
+    assert targets_dir.exists(), f"lealea targets dir missing: {targets_dir}"
+
+    results = ingest_directory(tmp_db, targets_dir, strict=False)
+    assert len(results) >= 3, (
+        f"expected ≥3 lealea targets ingested, got {len(results)}: "
+        f"{list(results.keys())}"
+    )

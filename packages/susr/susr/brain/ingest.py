@@ -127,6 +127,43 @@ _LIKERT_TO_FLOAT_FIELDS: dict[str, tuple[str, ...]] = {
 }
 
 
+# Field alias → canonical 欄名（R6 patch；R3-A「symptom out the source」精神）。
+# 只 map 語意明確等價別名；模糊 alias（如 ``target_value_pct`` /
+# ``baseline_value_pct``，「絕對 %」vs「reduction %」語意不同）surface 但不 map，
+# 留給 Pydantic 報錯。來源：lealea-5364 fixture entities/targets/*.md diff。
+_TARGET_FIELD_ALIASES: dict[str, str] = {
+    "target_value_pct_reduction": "target_value",  # 真實 lealea 命中
+    "target_value_pct": "target_value",             # 真實 lealea 命中（green-electricity）
+    "baseline_value_pct": "baseline_value",          # 真實 lealea 命中（green-electricity）
+    # forward-compat 預列（顧問另一種命名可能）
+    "by_year": "target_year",
+    "target_year_by": "target_year",
+    "baseline_year_value": "baseline_value",
+}
+
+
+def _normalize_field_aliases(
+    fm: dict[str, Any], aliases: dict[str, str],
+) -> dict[str, Any]:
+    """套用 ``alias → canonical`` 欄名映射；不 mutate 輸入。
+
+    Rules:
+        * alias 存在且 canonical 不存在 → rename。
+        * alias 與 canonical 同時存在 → preserve canonical、drop alias
+          （fixture 同時寫了兩個衝突欄位的 symptom，但不該 crash）。
+        * 未列在 ``aliases`` 的 key 原樣保留（forward-compat）。
+    """
+    out = dict(fm)
+    for alias, canonical in aliases.items():
+        if alias not in out:
+            continue
+        if canonical in out:
+            out.pop(alias)  # 衝突：preserve canonical
+        else:
+            out[canonical] = out.pop(alias)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Public normalize API
 # ---------------------------------------------------------------------------
@@ -155,6 +192,10 @@ def normalize_frontmatter(fm: dict[str, Any], entity_type: str) -> dict[str, Any
 
     規則：
 
+    * **Field alias → canonical**：例如 target entity 的 ``target_value_pct_reduction``
+      → ``target_value``（lealea fixture 命名 vs ``TargetFrontmatter`` schema）。
+      只 map 語意明確等價的別名；模糊 alias（如 ``target_value_pct``）surface
+      但不 map，留給 Pydantic 報錯。
     * **Literal token 對應**：英文 / 別稱 token → brain schema 接受的值（多半中文）。
       未知 token 原樣保留，留給 Pydantic 報錯 — 不靜默吞掉。
     * **PyYAML auto-parsed date 還原成 str**：``assessed_at: 2025-01-15``
@@ -176,6 +217,10 @@ def normalize_frontmatter(fm: dict[str, Any], entity_type: str) -> dict[str, Any
         本函式**不**呼叫 Pydantic 驗證，只做形態轉換；驗證在 put_page 內部。
     """
     out: dict[str, Any] = dict(fm)  # shallow copy；list/dict value 不深拷
+
+    # 0. Field alias 對應（先做，因為後續 Literal/date coerce 用 canonical 欄名）
+    if entity_type == "target":
+        out = _normalize_field_aliases(out, _TARGET_FIELD_ALIASES)
 
     # 1. Literal token 對應
     for field, token_map in _LITERAL_FIELDS.get(entity_type, {}).items():
