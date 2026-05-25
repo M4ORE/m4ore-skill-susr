@@ -578,3 +578,22 @@ pip install susr                # 一次性
   - iXBRL 渲染（Phase 6 文件組裝）
   - ESEF 驗證（Phase 7 gap analysis）
 - **與三原則對齊**：Definition「可比較」未來能精準對應 ISSB 結構；不影響當下 Co-pilot 定位
+
+### 2026-05-25 · Step 1 R2 implementation 完成（158/158 tests pass）
+
+- **5 個並行 subagent + 4 個 integration patches** = 把 R1 的 stub-only `packages/susr/` 變成可跑的 Phase 3 MVP 後端
+- **產出**：
+  - **brain**: 17 entity dataclasses + 19 typed edges + Page CRUD（含 SQLite NULL upsert 修正）+ FTS5 sync + page_versions + timeline append-only + RRF hybrid search + 5 連結性 invariants runner
+  - **providers**: BGE-M3 / Qwen3 / OpenAI embedding wrappers (lazy init)、AnthropicProvider（薄抽象 + vendor extras 折衷 per Q17）
+  - **MCP**: FastMCP stdio server + 4 Phase 3 tools + 4 workspace ops + 1 read_consultant_kb，promote_to_consultant_kb 採 deterministic token two-step confirm 機制
+- **整合 bug 與修補**（並行 subagent 風險的典型實例）：
+  1. `tmp_client_workspace` fixture 未 monkeypatch `SUSR_WORKSPACE_ROOT` → 加 monkeypatch
+  2. `put_page` upsert 失效（SQLite UNIQUE 對 NULL 視 distinct）→ 改顯式 SELECT-then-INSERT/UPDATE
+  3. `cannot start a transaction within a transaction`（snapshot_page 留 implicit tx）→ migrations 設 `isolation_level=None`（autocommit + 顯式 BEGIN/COMMIT）
+  4. promote token test 期望 raise / 實作是 dry-run → 改測試對齊（R2-D dry-run 設計較 elegant）
+- **未在 R2 完成（轉 R3）**：
+  - `BgeM3EmbeddingProvider.name` 與 spec §5.2 「bge:bge-m3」格式微差（暫接受兩種）
+  - I5 排放 invariant 假設「`calculated_with` edge 存在 ⇒ datapoint 是排放類」，缺 KPI category 欄位精確判斷
+  - `restore_from` 對 `date` value_type round-trip 非嚴格 lossless
+  - sqlite-vec 0.1.9 TEXT metadata NOT NULL 約束（vec_chunks insert 需用空字串）
+- **下一步**：Step 2 — 用 Option C 結構重組 `examples/lealea-5364/` 並用 brain 跑 Phase 3 端到端

@@ -162,7 +162,7 @@ window.SUSR_DASHBOARD = {
         "✅ [done] Layer 4 embedding benchmark harness: tests/benchmarks/embedding/ (22 queries / 38 corpus / BGE-M3+Qwen3+OpenAI 3 providers)",
         "✅ [done] websearch-pending audit: docs/research/websearch-pending-audit.md (4 全 resolved，建議 SP2 後 deprecate)",
         "✅ [done] user-guide skeleton: docs/user-guide/ (README + 4 philosophy + 3 scenarios + features template + 1 feature 範例)",
-        "🥇 Step 1 R2 (blocked-by R1 ✅，可開工)：填實作 — brain CRUD / RRF / hybrid search / page_versions snapshot / Layer 3+4 tests / MCP tool 實作（依 step1-r1-notes.md checklist）",
+        "✅ [done] Step 1 R2 implementation：5 個並行 subagent 完成 brain CRUD + search/RRF + page_versions + timeline + 3 embedding providers + Anthropic LLM + MCP server + 9 tools + Layer 3+4 tests (158/158 pass)",
         "🥈 Step 2: 用 Option C 重組力麗 5364 example（entities/topics/ + projects/2025-sr/materiality-2025.md），跑 Phase 3 端到端",
         "🥉 Step 3: 把 references/*.md 整理進 packages/susr/susr/shared_kb/data/（pip ship；client repo 透過 snapshot copy 收到）",
         "🧪 Layer 4 benchmark 跑（user 自跑）：BGE-M3 vs Qwen3 vs OpenAI 在力麗 fixture 上 retrieval 對比，決定 default embedding",
