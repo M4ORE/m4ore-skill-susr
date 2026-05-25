@@ -26,9 +26,8 @@ README 上有兩類數字，本檔以**不同對齊策略**處理：
 
 from __future__ import annotations
 
-import importlib
+import ast
 import re
-import sys
 from pathlib import Path
 
 
@@ -46,15 +45,33 @@ def _read_repo_md(repo_root: Path, *relpath: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def _ensure_susr_on_path(repo_root: Path) -> None:
-    """把 ``packages/susr/`` 放到 ``sys.path``，讓我們可以 import susr.brain。
+def _ast_list_frontmatter_classes(entities_py: Path) -> list[str]:
+    """AST 列出 ``*Frontmatter`` 類別名稱（不依賴 susr 可 import — CI 沒 pydantic）。
 
-    repo 內 ``packages/susr/`` 是純 src layout（沒 ``src/`` 中間層），
-    package 位於 ``packages/susr/susr/``，所以加到 path 的是 ``packages/susr``。
+    ``_EntityBase`` 不算。其他名為 ``*Frontmatter`` 的 ClassDef 全算。
     """
-    pkg_root = str(Path(repo_root, "packages", "susr").resolve())
-    if pkg_root not in sys.path:
-        sys.path.insert(0, pkg_root)
+    tree = ast.parse(entities_py.read_text(encoding="utf-8"))
+    return sorted(
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ClassDef)
+        and node.name.endswith("Frontmatter")
+        and not node.name.startswith("_")
+    )
+
+
+def _ast_count_edge_registry(edges_py: Path) -> int:
+    """AST 抓 ``EDGE_REGISTRY`` dict literal 的 key 數（不依賴 susr 可 import）。"""
+    tree = ast.parse(edges_py.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.AnnAssign | ast.Assign):
+            targets = [node.target] if isinstance(node, ast.AnnAssign) else node.targets
+            for tgt in targets:
+                if isinstance(tgt, ast.Name) and tgt.id == "EDGE_REGISTRY":
+                    val = node.value
+                    if isinstance(val, ast.Dict):
+                        return len(val.keys)
+    raise RuntimeError(f"EDGE_REGISTRY dict literal not found in {edges_py}")
 
 
 # ---------------------------------------------------------------------------
@@ -68,16 +85,11 @@ def test_readme_entity_types_count(REPO_ROOT):
     README 在 §架構概覽 / §MVP 驗收 / English Architecture 多處宣稱 17 types。
     drift 來源通常是新增 entity 後忘記同步 README。
     """
-    _ensure_susr_on_path(Path(REPO_ROOT))
-    entities_mod = importlib.import_module("susr.brain.entities")
-
-    actual_types = len(entities_mod.ENTITY_TYPES)
-    # Count *Frontmatter classes 作為交叉驗證（_EntityBase 不算）
-    frontmatter_classes = [
-        name
-        for name in dir(entities_mod)
-        if name.endswith("Frontmatter") and not name.startswith("_")
-    ]
+    entities_py = Path(
+        REPO_ROOT, "packages", "susr", "susr", "brain", "entities.py"
+    )
+    frontmatter_classes = _ast_list_frontmatter_classes(entities_py)
+    actual_types = len(frontmatter_classes)
 
     readme = _read_repo_md(REPO_ROOT, "README.md")
     # 抓「17 個 entity types」/「17 entity types」/「17 types」三種寫法
@@ -113,9 +125,10 @@ def test_readme_typed_edges_count(REPO_ROOT):
     edges.py 內已有 ``assert len(EDGE_REGISTRY) == 19`` 自爆；本 test 補
     README 端的一致性（registry 變大時 README 應同步）。
     """
-    _ensure_susr_on_path(Path(REPO_ROOT))
-    edges_mod = importlib.import_module("susr.brain.edges")
-    actual = len(edges_mod.EDGE_REGISTRY)
+    edges_py = Path(
+        REPO_ROOT, "packages", "susr", "susr", "brain", "edges.py"
+    )
+    actual = _ast_count_edge_registry(edges_py)
 
     readme = _read_repo_md(REPO_ROOT, "README.md")
     # 抓「19 條 typed edges」/「19 typed edges」/「19 條 typed」
@@ -147,7 +160,6 @@ def test_readme_invariants_count(REPO_ROOT):
     I4 / I5。注意：``assert_i1_core_topic_coverage`` 是 deprecated 向下相容
     wrapper，**不計入**。
     """
-    _ensure_susr_on_path(Path(REPO_ROOT))
     invariants_path = Path(
         REPO_ROOT, "packages", "susr", "susr", "brain", "invariants.py"
     )
