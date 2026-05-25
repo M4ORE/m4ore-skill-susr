@@ -47,6 +47,10 @@ dependencies = [
     # HTTP / CLI utilities
     "httpx>=0.27",
     "typer>=0.12",
+
+    # Phase 6 in-process docx renderer (render_docx_simple MCP tool).
+    # Pure-Python, no LibreOffice / pandoc env dep — runs anywhere pip install does.
+    "python-docx>=1.0,<2.0",
 ]
 
 [project.optional-dependencies]
