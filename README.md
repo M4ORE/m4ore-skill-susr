@@ -18,7 +18,7 @@ susr v0.1 是**本地優先（local-first）+ MCP-native + Markdown source of tr
 
 - **MVP 已可用**：Phase 3（4 tools）/ Phase 6 payload prep（4 tools）/ Phase 7 gap analysis（4 tools）
 - **驗證基準**：力麗觀光（5364, TPEx）lealea-5364 fixture 端到端 walkthrough
-- **測試**：275 passed + 2 skipped（Layer 1 lint + Layer 2 scenario + Layer 3 invariant + Layer 4 unit）
+- **測試**：293 passed + 2 skipped（Layer 1 lint + Layer 2 scenario + Layer 3 invariant + Layer 4 unit）
 - **誠實揭露**：Phase 4 GHG 計算引擎 / Phase 5 章節自動草稿 / Phase 8 公告流程**尚未實作**
 
 ---
@@ -107,6 +107,8 @@ Claude：[呼叫 create_client_workspace ...]
 
 之後零 shell 指令。完整安裝流程與健康檢查見 [`docs/user-guide/README.md`](docs/user-guide/README.md)。
 
+> 想看 30 分鐘從零跑出 Phase 3 重大性矩陣的完整對話腳本？見 [`docs/demo/lealea-phase3-quickstart.md`](docs/demo/lealea-phase3-quickstart.md)。
+
 ### 8-Phase SOP 與 MVP 涵蓋
 
 ```
@@ -151,10 +153,10 @@ Phase 8  Filing & Improve     ── ❌ 未實作
 | 指標 | 數字 |
 |---|---|
 | Entity 多樣性 | 17 types |
-| Lealea pages ingested | 81（28 topics + 14 IROs + 14 actions + 5 chapters + 其他） |
-| Typed edges | 51（含 14 `topic_has_iro` + 14 `iro_addressed_by`） |
-| Layer 3 invariants | **5/6 全綠**（I1a / I1b / I3 / I4 / I5 ✅；I2 chapter framework 細節 R8-3 待修） |
-| 端到端測試 | 275 passed + 2 skipped |
+| Lealea pages ingested | 95（28 topics + 14 IROs + 14 actions + 5 chapters + 14 frameworks + 7 stakeholders + 8 KPIs + 3 targets + 2 governance） |
+| Typed edges | 70（含 14 `topic_has_iro` + 14 `iro_addressed_by` + 19 `chapter_conforms_to` + 20 `discloses_topic` + 3 `target_measures`） |
+| Layer 3 invariants | **6/6 全綠**（I1a / I1b / I2 / I3 / I4 / I5 ✅，R8-3 收尾 chapter framework 一致性） |
+| 端到端測試 | 293 passed + 2 skipped |
 | Phase 6 payload | chapters 5 / iros 14 / kpis 8 / targets 3 **全非空** |
 | Phase 7 gap severity | critical 38 / warning 22 / info 39（fixture placeholder 含其中） |
 
@@ -289,12 +291,12 @@ Full spec: [`docs/research/step1-spec.md`](docs/research/step1-spec.md).
 
 Validated against **Lealea Hotels (5364, TPEx, hospitality)** 2025 sustainability report scenario:
 
-- 81 pages ingested (28 topics + 14 IROs + 14 actions + 5 chapters + others)
+- 95 pages ingested (28 topics + 14 IROs + 14 actions + 5 chapters + 14 frameworks + others)
 - 51 typed edges (incl. 14 `topic_has_iro` + 14 `iro_addressed_by`)
-- 5/6 Layer-3 invariants green (I2 chapter consistency: 5 violations open in R8-3 backlog)
+- **6/6 Layer-3 invariants green** (all I1a/I1b/I2/I3/I4/I5 pass with R8-3 frameworks landed)
 - Phase 6 payload all non-empty (chapters 5 / iros 14 / kpis 8 / targets 3)
 - Phase 7 gap severity: critical 38 / warning 22 / info 39
-- **275 tests passed + 2 skipped**
+- **293 tests passed + 2 skipped**
 
 Detailed walkthroughs: [`docs/walkthroughs/`](docs/walkthroughs/) (R2 / R3 / R6).
 
