@@ -18,6 +18,7 @@ Sub-modules (all R2 placeholders today):
     pages        — page CRUD
     timeline     — append-only timeline_entries writer/reader
     versions     — page_versions snapshot/restore
+    ingest       — 真實 markdown → brain 的容忍層（R3 P0a）
 
 Sub-package:
     ddl/v001_init.sql — complete, runnable schema (no R2 changes expected)
@@ -26,6 +27,12 @@ See docs/research/step1-spec.md §2..§4 for the full design.
 """
 
 from __future__ import annotations
+
+from susr.brain.ingest import (
+    ingest_directory,
+    ingest_markdown_file,
+    normalize_frontmatter,
+)
 
 __all__ = [
     "engine",
@@ -37,4 +44,9 @@ __all__ = [
     "pages",
     "timeline",
     "versions",
+    "ingest",
+    # ingest tolerance layer (R3 P0a) — re-exported for top-level convenience
+    "normalize_frontmatter",
+    "ingest_markdown_file",
+    "ingest_directory",
 ]
