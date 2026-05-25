@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>susr · Project Dashboard</title>
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#111c33;
+    --panel-2:#16223b;
+    --line:#223255;
+    --text:#e6edf7;
+    --muted:#94a3b8;
+    --accent:#34d399;
+    --accent-2:#60a5fa;
+    --warn:#f59e0b;
+    --danger:#f87171;
+    --pivot:#a78bfa;
+    --gold:#fbbf24;
+    --shadow:0 4px 20px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC",
+      "Microsoft JhengHei",Roboto,sans-serif;
+    line-height:1.55;font-size:15px}
+  a{color:var(--accent-2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#0a1426;padding:1px 6px;border-radius:4px;font-size:.9em;
+    font-family:"JetBrains Mono",Consolas,monospace;color:#e5d4ff}
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+  header.top{
+    display:flex;flex-direction:column;gap:8px;
+    padding:28px 32px;border-radius:16px;
+    background:linear-gradient(135deg,#1e2a4d 0%,#16223b 100%);
+    border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:32px;
+  }
+  .codename{font-size:42px;font-weight:800;letter-spacing:-1px}
+  .codename .badge{font-size:13px;font-weight:500;background:#3b2a5e;color:#e9d5ff;
+    padding:4px 10px;border-radius:999px;vertical-align:middle;margin-left:10px}
+  .tagline{font-size:18px;color:var(--accent);font-weight:500}
+  .north-star{
+    margin-top:14px;padding:14px 18px;background:#0a1426;border-left:3px solid var(--gold);
+    border-radius:6px;color:#fde68a;font-size:14.5px;line-height:1.65}
+  .north-star strong{color:var(--gold);margin-right:8px}
+  .meta-row{display:flex;gap:18px;color:var(--muted);font-size:13px;margin-top:6px;flex-wrap:wrap}
+
+  /* Nav */
+  nav.toc{
+    display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    margin-bottom:28px;position:sticky;top:8px;z-index:10;backdrop-filter:blur(6px);
+  }
+  nav.toc a{
+    background:var(--panel);color:var(--text);padding:6px 12px;border-radius:6px;
+    font-size:13.5px;border:1px solid transparent;transition:.15s;
+  }
+  nav.toc a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+
+  /* Section */
+  section{margin:36px 0}
+  h2.sec-title{
+    font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:10px;
+  }
+  h2.sec-title .num{
+    background:var(--accent);color:#0a1426;border-radius:50%;
+    width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;
+  }
+  .sec-sub{color:var(--muted);font-size:14px;margin:0 0 18px 40px}
+
+  /* Cards grid for principles */
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:980px){.grid-3{grid-template-columns:1fr}}
+
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:20px;box-shadow:var(--shadow);
+  }
+  .card.principle{border-top:3px solid var(--accent)}
+  .card .ord{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .card h3{margin:6px 0 4px;font-size:17px}
+  .card .file{font-size:12px;color:var(--accent-2);font-family:Consolas,monospace;margin-bottom:12px;display:block}
+  .card .headline{font-size:14.5px;color:#cbd5e1;margin-bottom:14px;line-height:1.6;
+    font-style:italic;border-left:2px solid var(--accent);padding-left:10px}
+  .card ul{margin:0;padding-left:18px;font-size:13.5px;color:#d6deed}
+  .card ul li{margin-bottom:6px}
+  .card .item-name{color:var(--accent);font-weight:600}
+
+  /* Pivot */
+  .pivot-grid{display:grid;grid-template-columns:1fr 60px 1fr;gap:16px;align-items:stretch}
+  @media(max-width:760px){.pivot-grid{grid-template-columns:1fr;gap:12px}.pivot-arrow{transform:rotate(90deg)}}
+  .pivot-col{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;
+  }
+  .pivot-col.before{border-top:3px solid var(--muted);opacity:.85}
+  .pivot-col.after{border-top:3px solid var(--pivot)}
+  .pivot-col h3{margin:0 0 12px;font-size:16px}
+  .pivot-col.before h3{color:var(--muted)}
+  .pivot-col.after h3{color:var(--pivot)}
+  .pivot-col dl{margin:0;font-size:13.5px}
+  .pivot-col dt{color:var(--muted);font-size:11px;text-transform:uppercase;
+    letter-spacing:.5px;margin-top:10px}
+  .pivot-col dd{margin:2px 0 0;color:#dbe4f3}
+  .pivot-arrow{
+    display:flex;align-items:center;justify-content:center;
+    font-size:32px;color:var(--pivot);font-weight:300
+  }
+  .pivot-implication{
+    margin-top:18px;padding:14px 18px;background:#1e1538;border:1px solid #3b2a5e;
+    border-radius:8px;font-size:14px;color:#e9d5ff;line-height:1.7
+  }
+  .pivot-implication::before{content:"💡 ";margin-right:4px}
+
+  /* Comparison table for copilot vs replacement */
+  table.cmp{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px;
+    background:var(--panel);border-radius:10px;overflow:hidden}
+  table.cmp th,table.cmp td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  table.cmp th{background:var(--panel-2);color:var(--muted);font-weight:600;font-size:12px;
+    text-transform:uppercase;letter-spacing:.5px}
+  table.cmp tr:last-child td{border-bottom:none}
+  table.cmp td:nth-child(2){color:#a7f3d0}
+  table.cmp td:nth-child(3){color:#fca5a5}
+
+  /* Sprint */
+  .sprint-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:20px;margin-bottom:16px}
+  .sprint-head{display:flex;justify-content:space-between;align-items:baseline;
+    flex-wrap:wrap;gap:10px;margin-bottom:6px}
+  .sprint-head .id{font-family:Consolas,monospace;color:var(--accent-2);font-size:14px}
+  .sprint-head .rating{background:#0e3320;color:#a7f3d0;padding:2px 10px;border-radius:6px;
+    font-size:12px;font-weight:600}
+  .sprint-title{font-size:17px;margin:0;color:#fff}
+  .sprint-summary{color:#cbd5e1;font-size:14px;margin:8px 0 14px;line-height:1.6}
+  .tasks{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;
+    margin:10px 0}
+  .task{display:flex;gap:8px;align-items:center;font-size:13px;
+    padding:8px 12px;background:var(--panel-2);border-radius:6px;border:1px solid var(--line)}
+  .task .check{font-size:14px}
+  .task .tid{font-family:Consolas,monospace;color:var(--muted);font-size:12px}
+  .surprise{background:#2a1f0e;border:1px solid #5e4d2a;border-radius:8px;
+    padding:12px 16px;margin-top:14px;font-size:13.5px;color:#fde68a;line-height:1.7}
+  .surprise::before{content:"⚡ 意外發現 — ";color:var(--gold);font-weight:600}
+
+  .backlog-card{background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--warn);border-radius:10px;padding:18px;margin-bottom:14px}
+  .backlog-card.pivot{border-left-color:var(--pivot)}
+  .backlog-card h3{margin:0 0 4px;font-size:15px}
+  .backlog-card .id{font-family:Consolas,monospace;color:var(--muted);font-size:12px}
+  .backlog-card ul{margin:10px 0 0;padding-left:20px;font-size:13.5px;color:#d6deed}
+  .backlog-card ul li{margin-bottom:5px}
+
+  /* Open questions */
+  .q{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:18px 20px;margin-bottom:12px}
+  .q.decided{border-left:3px solid var(--accent)}
+  .q.partial{border-left:3px solid var(--accent-2)}
+  .q.nextup{border-left:3px solid var(--pivot)}
+  .q.leaning{border-left:3px solid var(--gold)}
+  .q-head{display:flex;justify-content:space-between;align-items:baseline;
+    gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .q-id{font-family:Consolas,monospace;color:var(--accent);font-weight:600;font-size:13px}
+  .q-topic{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .q-question{font-size:15px;color:#fff;margin:6px 0 10px;font-weight:500}
+  .q-opts{margin:0;padding-left:20px;font-size:13.5px;color:#cbd5e1}
+  .q-opts li{margin-bottom:4px}
+  .q.decided .q-opts{opacity:.55}
+  .q-decision{margin-top:12px;padding:10px 14px;background:#0e2418;
+    border:1px solid #1f4d33;border-radius:6px;color:#bbf7d0;font-size:13.5px;line-height:1.65}
+  .q.partial .q-decision{background:#0e1d33;border-color:#1f3a5e;color:#bfdbfe}
+  .q.nextup .q-decision{background:#1e1538;border-color:#3b2a5e;color:#e9d5ff}
+  .q.leaning .q-decision{background:#2a1f0e;border-color:#5e4d2a;color:#fde68a}
+  .q-owner{margin-top:10px;font-size:12px;color:var(--muted)}
+  .q-owner .pill{padding:2px 8px;border-radius:999px;font-weight:600;margin-left:6px}
+  .q-owner .pill.pending{background:#3a2a14;color:var(--warn)}
+  .q-owner .pill.decided{background:#0e3320;color:#a7f3d0}
+  .q-owner .pill.partial{background:#0e1d33;color:#bfdbfe}
+  .q-owner .pill.nextup{background:#1e1538;color:#e9d5ff}
+  .q-owner .pill.leaning{background:#2a1f0e;color:#fde68a}
+
+  /* Doc index */
+  table.docs{width:100%;border-collapse:collapse;background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px}
+  table.docs th,table.docs td{padding:10px 14px;border-bottom:1px solid var(--line);
+    text-align:left;vertical-align:top}
+  table.docs th{background:var(--panel-2);color:var(--muted);font-size:12px;
+    text-transform:uppercase;letter-spacing:.5px}
+  table.docs tr:last-child td{border-bottom:none}
+  table.docs .path{font-family:Consolas,monospace;color:var(--accent-2);white-space:nowrap}
+
+  /* Product structure layers */
+  .layers{display:flex;flex-direction:column;gap:10px}
+  .layer{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px 18px;border-left:4px solid var(--accent-2)}
+  .layer.special{border-left-color:var(--pivot)}
+  .layer-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .layer-head h4{margin:0;font-size:15px;color:var(--accent-2)}
+  .layer.special .layer-head h4{color:var(--pivot)}
+  .layer-head .sub{color:var(--muted);font-size:12px}
+  .layer ul{margin:6px 0 0;padding-left:20px;font-size:13.5px;color:#d6deed}
+  .layer ul li{margin-bottom:4px}
+
+  footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:12px;text-align:center}
+  footer code{background:#0a1426}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="codename">susr <span class="badge">post-pivot · 2026-05-25</span></div>
+  <div class="tagline" id="tagline">…</div>
+  <div class="meta-row">
+    <span>Canonical name: <code id="canonical">…</code></span>
+    <span>Version: <span id="version">…</span></span>
+    <span>Updated: <span id="updated">…</span></span>
+  </div>
+  <div class="north-star"><strong>★ North Star</strong><span id="north"></span></div>
+</header>
+
+<nav class="toc">
+  <a href="#principles">① 三原則</a>
+  <a href="#pivot">② 戰略樞轉</a>
+  <a href="#structure">③ 產品架構</a>
+  <a href="#sprint">④ Sprint 狀態</a>
+  <a href="#questions">⑤ 待決議事項</a>
+  <a href="#docs">⑥ 文件索引</a>
+</nav>
+
+<section id="principles">
+  <h2 class="sec-title"><span class="num">1</span>三份最高原則文件</h2>
+  <p class="sec-sub">任何工作開始前先載入；與這三份牴觸的決策必須先停下來討論。</p>
+  <div class="grid-3" id="principle-cards"></div>
+
+  <div style="margin-top:24px">
+    <h3 style="font-size:16px;color:var(--muted);margin-bottom:8px">Co-pilot ✅ vs Replacement ❌</h3>
+    <table class="cmp" id="cmp-table"></table>
+  </div>
+</section>
+
+<section id="pivot">
+  <h2 class="sec-title"><span class="num">2</span>戰略樞轉</h2>
+  <p class="sec-sub">2026-05-25 — 由使用者以三原則文件重新定錨。</p>
+  <div class="pivot-grid">
+    <div class="pivot-col before" id="pivot-before"></div>
+    <div class="pivot-arrow">→</div>
+    <div class="pivot-col after" id="pivot-after"></div>
+  </div>
+  <div class="pivot-implication" id="pivot-implication"></div>
+</section>
+
+<section id="structure">
+  <h2 class="sec-title"><span class="num">3</span>產品架構（MVP）</h2>
+  <p class="sec-sub">任何新功能必須能放入下列其中一層，否則先質疑它是否屬於本產品。</p>
+  <div class="layers" id="layers"></div>
+</section>
+
+<section id="sprint">
+  <h2 class="sec-title"><span class="num">4</span>Sprint 狀態 & Backlog</h2>
+  <p class="sec-sub">PDCA 紀錄。Sprint 1 已收尾；SP2 候選與樞轉對齊清單見下。</p>
+  <div id="sprint-current"></div>
+  <div id="sprint-backlogs"></div>
+</section>
+
+<section id="questions">
+  <h2 class="sec-title"><span class="num">5</span>待決議事項</h2>
+  <p class="sec-sub">下一輪對話可逐項收斂；目前都是 <span class="pill" style="background:#3a2a14;color:var(--warn);padding:2px 8px;border-radius:999px;font-weight:600">pending</span>。</p>
+  <div id="questions-list"></div>
+</section>
+
+<section id="docs">
+  <h2 class="sec-title"><span class="num">6</span>文件索引</h2>
+  <p class="sec-sub">🔱 = 三原則文件（最高、唯讀） · ⚠️ = 待對齊新定位</p>
+  <table class="docs">
+    <thead><tr><th style="width:34%">路徑</th><th>說明</th></tr></thead>
+    <tbody id="doc-rows"></tbody>
+  </table>
+</section>
+
+<footer>
+  Generated from <code>dashboard-data.js</code> · 修改內容請編輯 JS 與 <code>docs/*</code>，不要 hardcode 進 HTML
+</footer>
+
+</div>
+
+<script src="dashboard-data.js"></script>
+<script>
+// Helper
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+if (window.SUSR_DASHBOARD) {
+  render(window.SUSR_DASHBOARD);
+} else {
+  document.body.innerHTML = `<div style="padding:40px;color:#f87171;font-family:monospace">
+    <h2>dashboard-data.js not loaded</h2>
+    <p>請確認 <code>dashboard-data.js</code> 與 <code>dashboard.html</code> 在同一目錄。</p></div>`;
+}
+
+function render(d){
+  // Meta
+  $("tagline").textContent = d.meta.tagline;
+  $("canonical").textContent = d.meta.canonicalName;
+  $("version").textContent = d.meta.version;
+  $("updated").textContent = d.meta.updated;
+  $("north").textContent = d.meta.northStar;
+
+  // Principles
+  $("principle-cards").innerHTML = d.principles.map((p, i) => `
+    <div class="card principle">
+      <div class="ord">原則 ${i+1}</div>
+      <h3>${esc(p.title)}</h3>
+      <code class="file">${esc(p.file)}</code>
+      <div class="headline">${esc(p.headline)}</div>
+      ${p.atoms ? `<ul>${p.atoms.map(a => `
+        <li><span class="item-name">${esc(a.name)}</span> — ${esc(a.desc)}</li>`).join("")}</ul>` : ""}
+      ${p.valueProp ? `<div style="background:#0a1426;padding:10px 12px;border-radius:6px;
+        font-size:13px;color:#a7f3d0;line-height:1.6;margin-bottom:10px">${esc(p.valueProp)}</div>` : ""}
+      ${p.outcomes ? `<ul>${p.outcomes.map(o => `<li>${esc(o)}</li>`).join("")}</ul>` : ""}
+      ${p.mantra ? `<div style="margin-top:12px;padding:10px 12px;border-left:2px solid var(--gold);
+        color:#fde68a;font-size:13px;line-height:1.6">「${esc(p.mantra)}」</div>` : ""}
+      ${p.layers ? `<div style="font-size:12.5px;color:var(--muted);margin-top:4px">
+        詳見 §3 產品架構區塊</div>` : ""}
+    </div>
+  `).join("");
+
+  // Cmp table
+  const cmp = d.principles[0].copilotVsReplacement.rows;
+  $("cmp-table").innerHTML = `
+    <thead><tr>${cmp[0].map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>
+    <tbody>${cmp.slice(1).map(r =>
+      `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+
+  // Pivot
+  const before = d.strategicPivot.before, after = d.strategicPivot.after;
+  const pivotDl = (o) => `
+    <h3>${esc(o.label)}</h3>
+    <dl>
+      <dt>Framing</dt><dd>${esc(o.framing)}</dd>
+      <dt>Audience</dt><dd>${esc(o.audience)}</dd>
+      <dt>Value Claim</dt><dd>${esc(o.valueClaim)}</dd>
+      <dt>Business Model</dt><dd>${esc(o.businessModel)}</dd>
+      <dt>Moat</dt><dd>${esc(o.moat)}</dd>
+    </dl>`;
+  $("pivot-before").innerHTML = pivotDl(before);
+  $("pivot-after").innerHTML = pivotDl(after);
+  $("pivot-implication").textContent = d.strategicPivot.implication;
+
+  // Layers
+  $("layers").innerHTML = d.principles[2].layers.map((l, i) => `
+    <div class="layer${i === 3 ? " special" : ""}">
+      <div class="layer-head">
+        <h4>${esc(l.name)}</h4>
+        <span class="sub">— ${esc(l.subtitle)}</span>
+      </div>
+      <ul>${l.items.map(it => `<li>${esc(it)}</li>`).join("")}</ul>
+    </div>`).join("");
+
+  // Sprint
+  const sc = d.sprintStatus.current;
+  $("sprint-current").innerHTML = `
+    <div class="sprint-card">
+      <div class="sprint-head">
+        <div>
+          <span class="id">${esc(sc.id)}</span>
+          <h3 class="sprint-title" style="display:inline-block;margin-left:6px">${esc(sc.title)}</h3>
+        </div>
+        <span class="rating">phase: ${esc(sc.phase)} · 評等 ${esc(sc.rating)}</span>
+      </div>
+      <p class="sprint-summary">${esc(sc.summary)}</p>
+      <div class="tasks">${sc.tasks.map(t => `
+        <div class="task">
+          <span class="check">${t.status === "done" ? "✅" : "⏳"}</span>
+          <span class="tid">${esc(t.id)}</span>
+          <span>${esc(t.title)}</span>
+        </div>`).join("")}</div>
+      <div class="surprise">${esc(sc.surprise)}</div>
+    </div>`;
+
+  $("sprint-backlogs").innerHTML = [d.sprintStatus.backlog, d.sprintStatus.pivotBacklog]
+    .map((b, i) => `
+      <div class="backlog-card${i === 1 ? " pivot" : ""}">
+        <span class="id">${esc(b.id)}</span>
+        <h3>${esc(b.title)}</h3>
+        <ul>${b.items.map(it => `<li>${esc(it)}</li>`).join("")}</ul>
+      </div>`).join("");
+
+  // Open questions
+  const ownerClass = (o) => o === "decided" ? "decided"
+    : o === "partially-resolved" ? "partial"
+    : o === "next-up" ? "nextup"
+    : o === "leaning" ? "leaning" : "pending";
+  $("questions-list").innerHTML = d.openQuestions.map(q => {
+    const klass = ownerClass(q.owner);
+    return `
+    <div class="q ${klass}">
+      <div class="q-head">
+        <div>
+          <span class="q-id">${esc(q.id)}</span>
+          <span class="q-topic">· ${esc(q.topic)}</span>
+        </div>
+      </div>
+      <div class="q-question">${esc(q.question)}</div>
+      <ul class="q-opts">${q.options.map(o => `<li>${esc(o)}</li>`).join("")}</ul>
+      ${q.decision ? `<div class="q-decision">${esc(q.decision)}</div>` : ""}
+      <div class="q-owner">Owner: <span class="pill ${klass}">${esc(q.owner)}</span></div>
+    </div>`;
+  }).join("");
+
+  // Doc index — make paths clickable (external URLs open as-is; local paths use href)
+  $("doc-rows").innerHTML = d.docIndex.map(r => {
+    const isUrl = /^https?:\/\//i.test(r.path);
+    const href = isUrl ? r.path : r.path;
+    const target = isUrl ? ' target="_blank" rel="noopener"' : "";
+    return `
+    <tr>
+      <td class="path"><a href="${esc(href)}"${target}>${esc(r.path)}</a></td>
+      <td>${esc(r.desc)}</td>
+    </tr>`;
+  }).join("");
+}
+</script>
+</body>
+</html>
