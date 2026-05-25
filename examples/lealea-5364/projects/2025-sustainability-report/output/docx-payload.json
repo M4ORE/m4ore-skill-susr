@@ -1,0 +1,449 @@
+{
+  "document_type": "sustainability_report",
+  "client": {
+    "slug": "lealea-5364",
+    "legal_name": "力麗觀光開發股份有限公司",
+    "industry": "hospitality",
+    "stock_code": null
+  },
+  "reporting_period": "2025-01-01..2025-12-31",
+  "frameworks": [
+    "GRI 2021",
+    "ISSB",
+    "TWSE-FSC"
+  ],
+  "chapters": [
+    {
+      "title": "chapters/_skeleton",
+      "slug": "chapters/_skeleton",
+      "content_md": "# Phase 5 — Content Drafting：章節骨架（力麗觀光 5364）\n\n**用途**：依 Phase 3 重大議題清單建立報告書章節結構（不抄 GRI 目錄）；每章節遵循 SOP 連結性公式 **IRO → 治理 → 策略 → 行動與資源 → 目標 → KPI → 展望**。\n**輸入**：Phase 1 scoping、Phase 2 research log、Phase 3 materiality 矩陣、Phase 4 xlsx skeleton。\n**MVP 範圍**：本檔列全部章節骨架；單一完整章節示範見 `phase5-tcfd-sample.md`。\n\n---\n\n## 報告書章節結構（建議 7 大篇 + 附錄）\n\n### 篇 1 — 關於本報告書\n\n| 章 | 標題 | 對應議題 | 必含內容 |\n|---|---|---|---|\n| 1.1 | 報告書編製說明 | — | 期間、邊界（含 Scenario A/B 揭露）、適用標準（GRI 2021 In Accordance + SASB Hotels + TCFD + 金管會作業辦法）、確信狀態、聯絡資訊 |\n| 1.2 | 董事長的話 | — | 永續策略總覽、年度重大事件、未達標誠實揭露 |\n| 1.3 | 集團與公司簡介 | — | 力麗集團定位（紡織母體 → 觀光分支）、5 處據點、營收與員工概況 |\n\n### 篇 2 — 永續治理與策略\n\n| 章 | 標題 | 對應議題 | 必含內容 |\n|---|---|---|---|\n| 2.1 | 永續治理結構 | G1 | 董事會 ESG 專業揭露、永續委員會、職權、會議頻率、執行長 ESG KPI 連動 |\n| 2.2 | 利害關係人議合 | — | Phase 3 §1 7 大利害關係人、議合管道、頻次、議題回饋 |\n| 2.3 | 雙重重大性評估 | — | Phase 3 §2–§5 內容；矩陣圖 + 議題列表 + 與前年差異 |\n| 2.4 | 永續策略與目標體系 | G6 | 三大支柱 + 短中長期目標 + 與 SDGs 對應（不只貼標） |\n\n### 篇 3 — 環境管理（E）\n\n| 章 | 標題 | 對應議題 | 必含內容 |\n|---|---|---|---|\n| 3.1 | **氣候相關財務揭露（TCFD/ISSB S2）** ⭐ | E1, E2 | **完整章節示範見 `phase5-tcfd-sample.md`** |\n| 3.2 | 能源管理 | E2 | 用電 / 燃氣強度（kWh/住房數）、節能行動、綠電憑證、自發自用太陽能（如有） |\n| 3.3 | 水資源管理 | E3 | 取水來源（自來 / 山泉 / 井）、用水強度、再生水、日月潭流域風險 |\n| 3.4 | 廢棄物與循環經濟 | E4 | 一次性備品減量、廚餘處理、回收率、與在地堆肥業合作 |\n| 3.5 | 食材里程與在地採購 | E6 | 在地食材比例、原民食材（明池）、碳足跡 pilot |\n| 3.6 | 生物多樣性 | E7 | 馬告生態園區生態維護、員工生態教育、不破壞性活動承諾 |\n\n### 篇 4 — 社會責任（S）— 員工\n\n| 章 | 標題 | 對應議題 | 必含內容 |\n|---|---|---|---|\n| 4.1 | 員工權益與多元共融 | S1, S2 | 性別 / 年齡 / 國籍結構、薪酬比、勞資溝通管道；房務外包邊界揭露 |\n| 4.2 | 培訓與人才發展 | S3 | 年度訓練時數 / 人均、晉升管道、業界流動率對比 |\n| 4.3 | 職業安全衛生 | S4 | FR / SR / 千人率、餐飲燙傷與房務肌肉骨骼分項、職業病、改善案例 |\n| 4.4 | 員工心理健康 | S5 | EAP（如有）、客訴壓力管理、夜班疲勞應對 |\n\n### 篇 5 — 社會責任（S）— 客戶\n\n| 章 | 標題 | 對應議題 | 必含內容 |\n|---|---|---|---|\n| 5.1 | 食品安全與品質 ⭐⭐ | S6 | HACCP 範圍、食材溯源、過敏標示、食安事件（含未達標）、改善行動 |\n| 5.2 | 顧客隱私與資訊安全 ⭐ | S7, G4 | PII 治理、資安事件揭露、ISO 27001（如有）、會員資料政策 |\n| 5.3 | 顧客體驗與服務品質 | S8 | NPS / 滿意度、OTA 評論回饋機制、永續住房選項 |\n\n### 篇 6 — 社會責任（S）— 在地與供應鏈\n\n| 章 | 標題 | 對應議題 | 必含內容 |\n|---|---|---|---|\n| 6.1 | 在地共融與文化保存 ⭐ | S10, S11, S12 | 在地僱用比、原住民共榮（明池泰雅族）、地方創生案例、文化體驗活動 |\n| 6.2 | 永續供應鏈 | S13, S14 | 主要供應商 ESG 評估、集團內紡織備品（1444/1447）邊界、稽核機制 |\n\n### 篇 7 — 治理與誠信\n\n| 章 | 標題 | 對應議題 | 必含內容 |\n|---|---|---|---|\n| 7.1 | 公司治理結構 | G1 | 董事會組成、獨董、女性比、評鑑成績；母子公司利益衝突管理 |\n| 7.2 | 誠信經營（金管會強制） | G2 | 道德守則、揭弊機制、違規通報、年度教育時數 |\n| 7.3 | 法令遵循與風險管理 | G3 | 重大法規清單、年度違規揭露（含罰款金額）、ERM 流程 |\n\n### 附錄\n\n| 章 | 標題 | 內容 |\n|---|---|---|\n| A1 | GRI Standards 2021 Index | 完整 disclosure 對應頁碼 |\n| A2 | SASB Hotels & Lodging Index | SV-HL 各指標對應 |\n| A3 | TCFD / ISSB S2 對照表 | 4 構面 11 建議揭露逐項對應 |\n| A4 | 數據附錄 | 連結 `phase4-data-pack.xlsx`，含三年趨勢 |\n| A5 | 確信意見書 | 自願 / 強制確信狀態 + 第三方意見書（如有） |\n| A6 | 聯絡與意見回饋 | QR Code、永續辦公室聯絡 |\n\n---\n\n## 章節撰寫規範（每章節必過 6 項檢查）\n\n依 SKILL.md「反綠色洗白強制檢查」：\n\n1. ✅ **IRO 連結性**：本章節對應的 Impact / Risk / Opportunity 是否各列 1–3 項？\n2. ✅ **治理連結**：本章節議題的董事會 / 委員會監督機制是否說明？\n3. ✅ **策略連結**：本章節議題如何整合到公司整體策略？\n4. ✅ **行動與資源**：本年度具體做了什麼？投入多少資源（NTD / 人時）？\n5. ✅ **目標含基線、時程、驗證路徑**：不只「我們要更好」，要有可驗證 KPI\n6. ✅ **未達標揭露**：本年度有什麼沒達成？原因？調整？\n\n未通過任一項 → Phase 7 review 退回重寫。\n\n---\n\n## 章節主責對應 Phase 1 §6\n\n| 篇 | 主責 | 簽核 |\n|---|---|---|\n| 1, 2.4 | 永續發展辦公室 | 董事長 |\n| 2.1, 7 | 法務 / 財務 | 副總 |\n| 2.2, 2.3 | 永續發展辦公室 | 永續委員會 |\n| 3 | 工程部 | 副總 |\n| 4 | HR | 副總 |\n| 5 | 餐飲 / IT / 客戶服務 | 副總 |\n| 6.1 | 永續發展辦公室 | 副總 |\n| 6.2 | 採購 | 副總 |\n| 附錄 | 永續發展辦公室 | 永續長 |\n\n---\n\n## 下一步\n\n- ✅ Phase 5 示範章節進度：\n  - ✅ `tcfd-2025.md` ⭐ (E1, E2 — TCFD 4 構面完整示範)\n  - ✅ `food-safety-2025.md` ⭐⭐ (S6 — R7-A 補)\n  - ✅ `customer-privacy-2025.md` ⭐ (S7, G4 — R7-A 補)\n  - ✅ `local-indigenous-2025.md` ⭐ (S10, S12 — R7-A 補)\n- Phase 6 — 將草稿與 Phase 4 數據包送 docx / pdf / pptx skill 組裝（susr Phase 6 v0.1 payload prep 已 ready）\n- Phase 7 — 對照力麗 2023 PDF 章節結構，找差異（susr Phase 7 gap analysis 4 tools 已 ready）\n",
+      "order": 1,
+      "framework_refs": [
+        "gri-2021",
+        "tcfd",
+        "sasb-hl",
+        "issb-s1",
+        "issb-s2"
+      ],
+      "owner": "永續發展辦公室"
+    },
+    {
+      "title": "chapters/customer-privacy-2025",
+      "slug": "chapters/customer-privacy-2025",
+      "content_md": "# 第 5.2 章 — 顧客隱私與資訊安全\n\n> **對應重大議題**：S7 客戶隱私（核心象限 Financial ≥4.0） + G4 資訊安全\n> **適用標準**：GRI 418 客戶隱私 + ISO 27001 + 個人資料保護法 + 觀光產業實務指引\n> **章節公式**：IRO → 治理 → 策略 → 行動 → 目標 → KPI → 展望\n\n---\n\n## 1. IRO（Impact / Risk / Opportunity）\n\n### 1.1 衝擊（Impact）\n\n旅館業是 **PII 密集行業**：每筆訂房含姓名 / 身分證字號 / 信用卡 / 聯絡資訊 / 旅伴關係 / 飲食偏好 / 健康狀況（過敏原）等。會員制更聚積多年消費行為與位置軌跡。一筆資料外洩衝擊：個人隱私 + 信任 + 潛在被詐騙風險。\n\n### 1.2 風險（Risk）— 引用 IRO entity\n\n對應 `entities/iros/S7-customer-privacy-risk-leak.md`：\n\n| 子類 | 說明 | 時間框架 | 財務影響 |\n|---|---|---|---|\n| 法規罰款 | 個資法第 47 條，最高 NTD 2,000 萬/件 | 短期 | 高額罰款 |\n| 集體訴訟 | 大規模洩漏可能引發消費者集體訴訟 | 中期 | 賠償金 + 法律費用 |\n| 商譽崩潰 | 國際商務客 / 高端會員流失 | 短期 → 中期 | 訂房率、會員 retention |\n| 信用卡濫用 | PCI-DSS 違規 → 卡片網絡罰款 + 終止合作 | 短期 | 收款管道喪失 |\n\n**旅館業特殊**：監控影像 + 房卡使用紀錄 + Wi-Fi 連線紀錄都是個資；員工流動率高，內部濫用風險不低。\n\n### 1.3 機會（Opportunity）\n\n1. **ISO 27001 認證行銷**：旅館業普及率低，取得認證可作為高端商務 / 國際客的差異化定位\n2. **會員資料管理透明化**：明確說明資料使用目的 + opt-in 機制 → 反向強化品牌信任\n3. **資安投入 ROI**：阻擋一次重大事件節省 NTD [X] 千萬，遠超系統建置成本\n\n---\n\n## 2. 治理（Governance）\n\n- **主責**：IT 部主管 + 法務（個資法 / GDPR / CCPA 對應）\n- **監督**：永續委員會「資訊安全」分組（如未獨立分組則由治理結構分組覆蓋），每季 review\n- **執行頻率**：資安內部稽核每月、外部滲透測試每年；資安事件 4 小時內報集團\n- **董事會 KPI 連動**：資訊長績效考核含資安事件嚴重度（單件 critical 事件 = 年度扣 [N]%）\n\n---\n\n## 3. 策略（Strategy）\n\n旅館業資安不是「跟 IT 公司一樣」，而是要對應**多點接觸的 PII 流**：\n\n1. **資料最小化層**：訂房 / 入住流程只收集必要欄位，避免「為以後可能用而蒐集」\n2. **存取控制層**：員工帳號最小權限 + 多因子驗證 + 監控異常存取\n3. **加密層**：傳輸 TLS 1.3 + 儲存加密 + 信用卡 token 化（PCI-DSS）\n4. **回應層**：資安事件 SOP（4 小時通報主管機關 + 7 日通報受影響客戶 + 30 日內根因分析 + 補救）\n\n---\n\n## 4. 行動方案（Actions）2025\n\n| 行動 | 投入 | 主責 | 完成時間 |\n|---|---|---|---|\n| ISO 27001 認證申請（試點據點）| NTD [X] 萬 | IT + 法務 | Q4 2025 |\n| 員工資安訓練 100% 覆蓋 | NTD [Y] 萬 | HR + IT | 全年 |\n| PII 資料盤點與最小化 | NTD [Z] 萬 | IT + 法務 + 餐飲 | Q2 2025 |\n| 滲透測試（年度）| NTD [W] 萬 | IT 外包 | Q3 2025 |\n| 個資法 GDPR 對應更新 | 內部 | 法務 | Q1 2025 |\n\n---\n\n## 5. 目標（Targets）\n\n對應 `entities/targets/`（待 R7 補資安類 target entity）：\n\n| 目標 | 基線（2023）| 時程 | 驗證路徑 |\n|---|---|---|---|\n| 資安重大事件數 | [N] | 2025 0 件 | 內部稽核 + 主管機關通報 |\n| ISO 27001 認證據點 | 0 | 2026 至少 1 處 | 外部認證機構 |\n| 員工資安訓練覆蓋率 | [X]% | 2025 100% | HR 系統追蹤 |\n| 信用卡 token 化比例 | [Y]% | 2025 100% | PCI-DSS audit |\n\n⚠️ **三要素檢查**：基線 ✅ / 時程 ✅ / 驗證路徑 ✅\n\n---\n\n## 6. KPI\n\n| KPI | 2023 baseline | 2024 | 2025 placeholder | 單位 |\n|---|---|---|---|---|\n| 資安事件數（按嚴重度）| [N0]/[N1]/[N2] | [N] | 0 critical | 件 |\n| 個資主體請求回覆時間 | [X] | [X] | ≤ 7 日 | 日 |\n| 員工資安訓練時數 | [Y]/人 | [Y] | ≥ 4 hr/人 | 小時 |\n| 員工資安違規 | [Z] | [Z] | ≤ Z | 件 |\n\n---\n\n## 7. 展望與誠實揭露\n\n### 2024 未達標項\n\n依力麗 2023 報告書（_legacy/phase7-gap-analysis §1），原版**僅 GRI 418 列入 Index、無獨立章節揭露**。試做 2025 升級包含：\n- 資安事件分嚴重度逐件揭露\n- 個資主體權利請求數量 / 回覆時間揭露（GDPR / 個資法）\n- 監控影像與 Wi-Fi 紀錄保存期限政策明文揭露\n\n### 改善路徑\n\n- **2025**：完成 PII 盤點、ISO 27001 試點申請\n- **2026**：ISO 27001 認證至少 1 處；國際監管對應（GDPR / CCPA）完整化\n- **2027**：擴展認證至全據點；考慮 PCI-DSS L1 認證（高端會員消費密度提升時）\n\n---\n\n**對應 IRO**：`entities/iros/S7-customer-privacy-risk-leak.md`\n**對應 Topic**：`entities/topics/S7-customer-privacy.md`、`entities/topics/G4-information-security.md`\n**對應 KPI**：`entities/kpis/privacy-incidents.md`\n**章節骨架**：`projects/2025-sustainability-report/chapters/_skeleton.md` §5.2\n",
+      "order": 2,
+      "framework_refs": [
+        "gri-418",
+        "iso-27001",
+        "pci-dss"
+      ],
+      "owner": "IT 部 / 法務 / 永續發展辦公室"
+    },
+    {
+      "title": "chapters/food-safety-2025",
+      "slug": "chapters/food-safety-2025",
+      "content_md": "# 第 5.1 章 — 食品安全與品質\n\n> **對應重大議題**：S6 食品安全（核心象限，雙軸雙 ≥4.5）\n> **適用標準**：GRI 416 客戶健康與安全 + SASB SV-HL-260a.1 + 食品安全衛生管理法\n> **章節公式**：IRO → 治理 → 策略 → 行動 → 目標 → KPI → 展望\n\n---\n\n## 1. IRO（Impact / Risk / Opportunity）\n\n### 1.1 衝擊（Impact）\n\n旅館業餐飲營收占比高（力麗 5 處據點均含早餐、宴會、合菜，餐飲營收占比達 [X]%），客戶健康與安全為核心責任。直接衝擊：每年服務超過 [N] 萬人次用餐，任何食安事件直接影響客戶健康。\n\n### 1.2 風險（Risk）— 引用 IRO entity\n\n對應 `entities/iros/S6-food-safety-risk-incident.md`：\n\n| 子類 | 說明 | 時間框架 | 財務影響 |\n|---|---|---|---|\n| 罰款 | 食安法第 44-49 條，最高 NTD 200 萬/件 | 短期（1y）| 直接罰款 |\n| 商譽 | OTA 評論、新聞媒體擴散 → 訂房率、ADR 立即受創 | 短期 | 營收損失 |\n| 連鎖訴訟 | 過敏標示缺失引發民事賠償 | 中期 | 賠償金、訴訟成本 |\n\n**山區據點特殊風險**：明池 / 棲蘭冷鏈與供應鏈傳遞距離長，食材變質風險高。\n\n### 1.3 機會（Opportunity）\n\n1. **HACCP 認證行銷**：取得獨立第三方認證可作為差異化定位\n2. **在地食材溯源**：與宜蘭、南投在地小農合作 → 食材里程降低 + 在地創生 + 品牌故事\n3. **過敏友善定位**：全餐飲據點建立過敏原管理 → 服務歐美、日本團體客的競爭優勢\n\n---\n\n## 2. 治理（Governance）\n\n- **主責**：餐飲部主管（每店一位）+ 集團總部餐飲處\n- **監督**：永續委員會「食品安全 / 顧客體驗」分組，每季 review\n- **執行頻率**：HACCP 內部稽核每月、外部稽核每年；食安事件 24 小時內報集團\n- **董事會 KPI 連動**：餐飲長績效考核含食安事件數（重大事件 1 件 = 年度考核扣 [N]%）\n\n---\n\n## 3. 策略（Strategy）\n\n旅館業食安不只是「不出事」，而是建立「**信任 supply chain**」。三層策略：\n\n1. **預防層**：HACCP 體系全據點覆蓋 + 食材供應商 ESG 評估（含食品安全管理系統）\n2. **監控層**：每月微生物檢驗、每季食材源頭稽核、即時溫度監控（冷鏈）\n3. **回應層**：食安事件 SOP（24 小時通報 + 7 日內客戶補償 + 30 日內根因分析）\n\n---\n\n## 4. 行動方案（Actions）2025\n\n| 行動 | 投入 | 主責 | 完成時間 |\n|---|---|---|---|\n| 全據點 HACCP 換證更新 | NTD [X] 萬 | 餐飲部 | Q2 2025 |\n| 過敏原管理系統建置 | NTD [Y] 萬 | 餐飲部 + IT | Q3 2025 |\n| 在地食材溯源試點（明池/月潭）| NTD [Z] 萬 | 餐飲 + 採購 | Q4 2025 |\n| 食安事件回應 SOP 演練 | 每店 2 次/年 | 餐飲部 | 全年 |\n\n---\n\n## 5. 目標（Targets）\n\n對應 `entities/targets/`（待 R7 補食安類 target entity）：\n\n| 目標 | 基線（2023）| 時程 | 驗證路徑 |\n|---|---|---|---|\n| HACCP 認證據點覆蓋率 | [X]% | 2026 100% | 第三方認證機構 |\n| 食安重大事件 | [N] 件 | 2026 ≤ 0 件 | 內部稽核 + 主管機關通報 |\n| 在地食材比例 | [Y]% | 2030 ≥ 30% | 採購系統追蹤 |\n| 過敏標示完整率 | [Z]% | 2025 100% | 內部 audit |\n\n⚠️ **三要素檢查**：基線 ✅ / 時程 ✅ / 驗證路徑 ✅\n\n---\n\n## 6. KPI\n\n| KPI | 2023 baseline | 2024 | 2025 placeholder | 單位 |\n|---|---|---|---|---|\n| 食安事件數 | [N] | [N] | 0 | 件 |\n| HACCP 認證範圍 | [X]% 據點 | [X]% | 100% | % |\n| 食材檢驗次數 | [Y]/月 | [Y] | ≥ Y | 次 |\n| 客訴食品相關 | [Z] | [Z] | ≤ Z | 件/萬人次 |\n\n---\n\n## 7. 展望與誠實揭露\n\n### 2024 未達標項\n\n依力麗 2023 報告書 §7.4（_legacy/phase7-pdf-extract.md），原版**僅 GRI 416 列入 GRI Index 但無獨立深度揭露**。試做 2025 升級包含：\n- HACCP 證書編號 + 有效期完整揭露\n- 食安事件分嚴重度逐件揭露（過去從未做）\n- 過敏標示稽核結果 100% 揭露\n\n### 改善路徑\n\n- **2025**：完成全據點 HACCP 換證 + 過敏原管理上線\n- **2026**：申請 ISO 22000 整合認證（旅館業少有）\n- **2027**：在地食材碳足跡 pilot 完成、納入碳揭露\n\n---\n\n**對應 IRO**：`entities/iros/S6-food-safety-risk-incident.md`\n**對應 Topic**：`entities/topics/S6-food-safety.md`\n**對應 KPI**：`entities/kpis/food-safety-incidents.md`\n**章節骨架**：`projects/2025-sustainability-report/chapters/_skeleton.md` §5.1\n",
+      "order": 3,
+      "framework_refs": [
+        "gri-416",
+        "sasb-hl",
+        "haccp"
+      ],
+      "owner": "餐飲部 / 永續發展辦公室"
+    },
+    {
+      "title": "chapters/local-indigenous-2025",
+      "slug": "chapters/local-indigenous-2025",
+      "content_md": "# 第 6.1 章 — 在地共融與文化保存\n\n> **對應重大議題**：S10 在地僱用 + S12 文化保存與原民共榮（重大象限，SP1-004 旅館業特化納入）\n> **適用標準**：GRI 411 原住民權利 + GRI 413 在地社區 + SASB SV-HL-310a.1 + 原住民族基本法\n> **章節公式**：IRO → 治理 → 策略 → 行動 → 目標 → KPI → 展望\n\n---\n\n## 1. IRO（Impact / Risk / Opportunity）\n\n### 1.1 衝擊（Impact）— 引用 IRO entity\n\n對應 `entities/iros/S12-indigenous-culture-impact-preservation.md` + `S10-local-employment-impact-economy.md`：\n\n**馬告生態園區與泰雅族部落**：力麗明池、棲蘭兩處據點位於宜蘭縣大同鄉，鄰近泰雅族傳統領域與部落（南山、四季、英士等）。旅館營運直接影響：\n\n1. **文化保存衝擊**：營運中**呈現 / 包裝 / 傳承**部落文化的方式，會塑造遊客對泰雅族的認知（正向或扁平化）\n2. **在地經濟衝擊**：當地僱用比例、在地採購、稅收貢獻直接影響部落經濟與年輕人留鄉意願\n3. **生態 / 土地衝擊**：部落視自然為祖靈領域，旅館營運的環境足跡涉及文化敏感性\n\n### 1.2 風險（Risk）\n\n| 子類 | 說明 | 時間框架 | 財務影響 |\n|---|---|---|---|\n| 社會許可 | 對部落不尊重 → 社會抗議 / 媒體曝光 / 「明池營運社會許可」喪失 | 中期 | 營運中斷 / 商譽 |\n| 文化扁平化 | 把原民文化包裝為觀光「秀」而非平等共榮 → 反向受抨擊 | 中期 | 品牌定位 |\n| 在地關係 | 僅商業交易、無深度連結 → 在地年輕人流失 → 缺工 | 長期 | 人力短缺、營運成本 |\n\n### 1.3 機會（Opportunity）\n\n1. **差異化體驗**：與部落合作的原民文化深度旅遊（語言、織布、狩獵故事、生態知識）— 與一般山區度假村區隔\n2. **在地創生品牌**：明池作為地方創生案例 → 政府補助、媒體曝光、政策影響力\n3. **永續觀光標的**：對接國際永續觀光認證（GSTC、Travelife）\n\n---\n\n## 2. 治理（Governance）\n\n- **主責**：永續發展辦公室「在地共融」專案小組 + 明池 / 棲蘭店長\n- **監督**：永續委員會每年至少 1 次「在地共融年度議合會議」（與部落代表、地方政府、NGO）\n- **執行頻率**：與部落合作之承諾每季 review；爭議事件 24 小時內升級至集團\n- **董事會 KPI 連動**：在地共融項目納入 ESG 加分項\n\n---\n\n## 3. 策略（Strategy）\n\n從「友善鄰居」升級為「共榮夥伴」的三層策略：\n\n1. **諮詢層（Consent）**：所有涉及原民文化內容的營運決策（活動、餐點、行銷文宣）事前與部落代表諮詢\n2. **共創層（Co-create）**：與部落共同設計文化體驗（**部落 own 內容、力麗 own 通路**），收益分配對等\n3. **培力層（Capacity building）**：在地僱用優先、青年培訓計畫、與部落學校 / 教會合作\n\n⚠️ **明確不做**：\n- 把部落圖騰當「裝飾」用\n- 不諮詢就採用部落語言 / 儀式作為行銷素材\n- 將部落呈現為「觀光景點背景」\n\n---\n\n## 4. 行動方案（Actions）2025\n\n| 行動 | 投入 | 主責 | 完成時間 |\n|---|---|---|---|\n| 在地共融年度議合會議 | NTD [X] 萬 + 部落代表車馬費 | 永續辦公室 | Q1 + Q4 2025 |\n| 部落文化體驗 co-create pilot（明池）| NTD [Y] 萬 | 明池店長 + 部落工坊 | Q2-Q3 2025 |\n| 在地僱用招募活動（青年返鄉）| NTD [Z] 萬 | HR + 明池店 | Q2 2025 |\n| 在地食材 / 工藝品採購制度化 | 制度建置 | 採購 | Q3 2025 |\n| GSTC 永續觀光認證（明池試點）| NTD [W] 萬 | 永續辦公室 | Q4 2025 |\n\n---\n\n## 5. 目標（Targets）\n\n對應 `entities/targets/`（待 R7 補在地類 target entity）：\n\n| 目標 | 基線（2023）| 時程 | 驗證路徑 |\n|---|---|---|---|\n| 在地僱用比（明池 + 棲蘭）| [X]% | 2027 ≥ 50% | HR 系統追蹤 + 部落確認 |\n| 在地採購金額 | NTD [Y] 萬 | 2027 ≥ NTD Y×2 萬 | 採購系統 |\n| 部落 co-create 體驗數 | 0 | 2025 ≥ 2 / 2026 ≥ 5 | 部落 + 永續辦公室共同確認 |\n| GSTC 認證據點 | 0 | 2026 至少 1 處 | 第三方認證機構 |\n| 議合事件數 | 0 | 持續 ≥ 2/year | 內部紀錄 + 部落代表反饋 |\n\n⚠️ **三要素檢查**：基線 ✅ / 時程 ✅ / 驗證路徑 ✅\n\n---\n\n## 6. KPI\n\n| KPI | 2023 baseline | 2024 | 2025 placeholder | 單位 |\n|---|---|---|---|---|\n| 在地僱用比例 | [X]% | [X]% | ≥ X+5% | % |\n| 在地採購金額 | [Y] | [Y] | ≥ Y×1.2 | NTD 萬 |\n| 部落代表議合次數 | [N] | [N] | ≥ 2 | 次 |\n| 文化體驗活動參與人次 | [Z] | [Z] | ≥ Z×1.5 | 人次 |\n| 在地共融專案投入 | NTD [W] | [W] | ≥ W×1.3 | NTD 萬 |\n\n---\n\n## 7. 展望與誠實揭露\n\n### 2023-2024 揭露不足項\n\n依力麗 2023 報告書（_legacy/phase3-materiality.md S12 段、_legacy/phase7-gap-analysis §2.2），原版**未將原民共融列為重大議題**、**未深度揭露明池對泰雅族部落的關係**。試做 2025 主動納入，並承認：\n\n- 在地僱用比例與部落採購基線數據仍待補完\n- 過去文化體驗以「示範表演」為主，**尚未實現 co-create 模式**\n- 缺乏制度化的部落諮詢機制\n\n### 改善路徑\n\n- **2025**：制度化議合會議 + 啟動 co-create pilot + 在地僱用招募活動\n- **2026**：完成 GSTC 試點認證 + 部落 co-create 內容擴展\n- **2027-**：明池作為「企業 + 部落共榮」標桿案例 → 對接政府地方創生政策、申請國際永續觀光認證\n\n### 與三原則對齊\n\n本章呼應 CLAUDE.md §0「susr 是顧問為顧問而設」設計哲學 — 旅館業常忽略的「**文化敏感性**」議題正是顧問判斷的核心戰場，brain 提供 entity 結構讓顧問追蹤承諾，但 **co-create 的真實對等關係只有顧問與部落共同建構**。\n\n---\n\n**對應 IRO**：`entities/iros/S12-indigenous-culture-impact-preservation.md`、`entities/iros/S10-local-employment-impact-economy.md`\n**對應 Topic**：`entities/topics/S12-indigenous-culture.md`、`entities/topics/S10-local-employment.md`\n**章節骨架**：`projects/2025-sustainability-report/chapters/_skeleton.md` §6.1\n",
+      "order": 4,
+      "framework_refs": [
+        "gri-411",
+        "gri-413",
+        "sasb-hl"
+      ],
+      "owner": "永續發展辦公室 / 在地共融專案小組"
+    },
+    {
+      "title": "chapters/tcfd-2025",
+      "slug": "chapters/tcfd-2025",
+      "content_md": "# 第 3.1 章 — 氣候相關財務揭露（TCFD / ISSB S2 對照）\n\n> **本章為 Phase 5 完整章節示範**，遵循 SOP 連結性公式：\n> Impact / Risk / Opportunity → 治理 → 策略 → 行動與資源 → 目標 → KPI → 展望\n>\n> **對應重大議題**：E1 氣候變遷與低碳轉型、E2 能源管理（核心象限）\n> **適用標準**：TCFD 4 構面 11 建議揭露 + ISSB IFRS S2（試做選用，2028 強制）\n\n---\n\n## 1. IRO（Impact / Risk / Opportunity）\n\n### 1.1 衝擊（Impact）\n\n旅館業屬高耗能服務業，2023 年本公司直接與外購電力導致溫室氣體排放（Scope 1 + 2）為 **[X tCO2e]**（試做標 N/A）；含上游食材碳足跡與員工通勤的 Scope 3 為 **[Y tCO2e]**。本公司 5 處據點中，南投日月潭流域與宜蘭明池 / 棲蘭屬於台灣中央氣象署劃定的氣候敏感區，極端降雨與乾旱頻率上升將加劇生態與營運壓力。\n\n### 1.2 風險（Risk）— 雙軌：物理風險與轉型風險\n\n| 類別 | 子類 | 說明 | 時間框架 | 財務影響 |\n|---|---|---|---|---|\n| 物理 | 急性 | 颱風 / 豪雨打擊山區據點（明池、月潭）、客流中斷 | 短期（1–3y） | 營收下滑、修繕成本 |\n| 物理 | 慢性 | 平均氣溫上升 → 空調負荷年增 2–4%、夏季客流可能流失至涼爽地區 | 中期（3–10y） | 能源成本、毛利侵蝕 |\n| 轉型 | 政策 | 台灣碳費 2025 起徵；旅館業在第二批納管前可能受供應鏈傳導 | 短期 | 食材成本上升、能源成本 |\n| 轉型 | 政策 | 金管會 2026/2027/2028 ISSB 三階段強制；力麗預計 2028 適用 | 中期 | 揭露成本、確信費用 |\n| 轉型 | 市場 | 永續旅遊偏好（GenZ / 國際商務客）— 不揭露的旅館訂房比例可能下滑 | 中期 | 訂房率、ADR |\n| 轉型 | 名譽 | OTA 平台引入碳標籤；落後者將曝露於負評 | 中期 | 品牌價值 |\n\n### 1.3 機會（Opportunity）\n\n1. **永續旅遊溢價**：依 Booking.com 2024 永續旅遊報告，76% 旅客願為永續住宿支付溢價 — 力麗哲園日潭 / 月潭天然環境可包裝為永續旅遊標的\n2. **節能 ROI**：HVAC 升級、LED 全面化、智慧能源管理系統（EnMS）回收期通常 < 5 年\n3. **綠電轉型**：南投山區據點具屋頂太陽能潛力；宜蘭明池水力小型試點可行性研究\n4. **生態旅遊產品**：明池 / 棲蘭已具生態優勢，可發展碳中和包套產品\n5. **集團綜效**：母公司力麗 / 力鵬紡織業已啟動再生 PET 紗線，可導入旅館布巾備品\n\n---\n\n## 2. 治理（Governance）— TCFD 構面 1\n\n| 項目 | 揭露內容 |\n|---|---|\n| 董事會監督 | 永續委員會（董事會下設）每季 1 次；氣候議題自 2023 起列為固定議程 |\n| 董事 ESG 專業 | 7 席董事中 [X] 位具永續 / 環境 / ESG 專業背景；獨董 3 席含 [Y] 位氣候議題經驗（試做標 N/A — 待真實版補） |\n| 管理階層責任 | 副總經理為永續執行最高層；旗下永續發展辦公室（2 人）專責 |\n| 氣候 KPI 連動高管 | 2024 起，副總年度績效 KPI 含「能源強度年降 2%」與「Scope 1+2 排放年降 1.5%」（試做版本，實際依公司） |\n| 報告路徑 | 工程部 → 永續發展辦公室 → 副總 → 永續委員會 → 董事會 |\n\n---\n\n## 3. 策略（Strategy）— TCFD 構面 2\n\n### 3.1 情境分析（Scenario Analysis）\n\n| 情境 | 假設 | 對本公司影響 | 應對 |\n|---|---|---|---|\n| 1.5°C（IEA NZE） | 全球 2050 淨零；台灣碳費 2030 達 NTD 1,500/tCO2e | 能源成本年增 5–8%、Scope 3 食材成本傳導 +3% | 2027 前完成 LED + EnMS、2030 達綠電 30% |\n| 2°C（NDC 校準） | 台灣 2030 減 24±1%、2050 淨零 | 中度成本壓力、客戶需求溫和 | 2030 達 SBTi 1.5°C 路徑 |\n| 4°C（高排放） | 政策延宕；極端氣候頻率倍增 | 物理風險爆增；山區據點年度修繕成本翻倍 | 強化據點韌性、保險覆蓋、客戶分散 |\n\n### 3.2 策略整合\n\n本公司氣候策略整合三層：**降耗 × 轉型 × 韌性**。三層各有 2026–2030 年目標，與公司整體營運計畫綁定（不是獨立 ESG 章節）。\n\n---\n\n## 4. 風險管理（Risk Management）— TCFD 構面 3\n\n- **辨識**：每年 Q1 由永續發展辦公室主導，跨部門（工程、HR、餐飲、財務）盤點\n- **評估**：以 5 分制雙軸（衝擊 × 機率）評分；> 3.5 列入年度永續委員會議程\n- **整合至 ERM**：永續委員會風險清單同步至公司整體企業風險管理（ERM）系統，由稽核室列管\n- **回應**：依風險類別分配責任部門 + 季度追蹤 + 年度回顧\n\n---\n\n## 5. 行動與資源（Actions & Resources）— 2023 年度\n\n| 行動 | 投入 | 進度 |\n|---|---|---|\n| 全據點 LED 改善 | NTD [X] 萬 | 直營三館 2023 完成 80%；委託二館 2024 啟動 |\n| HVAC 智慧排程 | NTD [X] 萬 | 日潭館 pilot 完成；2024 推廣 |\n| 員工節能訓練 | [Y] 人時 | 全員完訓 |\n| 食材在地採購 | — | 南投 / 宜蘭在地食材比例提升至 [Z]% |\n| Scope 3 盤查啟動 | NTD [X] 萬 + 顧問 | C1, C6, C7 完成；其餘 2024 接續 |\n| 太陽能可行性研究 | NTD [X] 萬 | 月潭館屋頂評估完成 |\n\n\\* 試做版未取得真實財務數據，[X][Y][Z] 為占位符。\n\n---\n\n## 6. 目標（Targets）— TCFD 構面 4\n\n| 目標類型 | 基線 | 目標 | 時程 | 驗證路徑 |\n|---|---|---|---|---|\n| Scope 1 + 2 絕對排放（市場基礎） | 2023 [X] tCO2e | -25% | 2030 | 第三方有限確信 |\n| Scope 1 + 2 強度（tCO2e / 住房數） | 2023 [X] | -30% | 2030 | 內部稽核 + 確信 |\n| 綠電比例（市場基礎） | 2023 [X]% | 30% | 2030 | T-REC 憑證 + 自發自用 |\n| 能源強度（MJ / 住房數） | 2023 [X] | -20% | 2028 | 帳單對比 |\n| Scope 3（C1+C6+C7）盤查涵蓋率 | 2023 60% | 100% | 2026 | 顧問報告 |\n| SBTi 1.5°C 路徑承諾 | — | 提交 | 2027 | SBTi 認證 |\n| 淨零目標 | — | 2050 淨零 | 2050 | TCFD 揭露追蹤 |\n\n---\n\n## 7. 指標（Metrics & Targets KPIs）\n\n依 TCFD 構面 4 + ISSB S2 強制揭露：\n\n| KPI | 2023 | 2022 | YoY | 揭露頁 |\n|---|---|---|---|---|\n| Scope 1（tCO2e） | [X] | [Y] | [Z]% | A4 數據附錄 |\n| Scope 2 — 地點基礎（tCO2e） | [X] | [Y] | [Z]% | A4 |\n| Scope 2 — 市場基礎（tCO2e） | [X] | [Y] | [Z]% | A4 |\n| Scope 3 — C1（tCO2e） | [X] | — | 首年 | A4 |\n| Scope 3 — C6（tCO2e） | [X] | — | 首年 | A4 |\n| Scope 3 — C7（tCO2e） | [X] | — | 首年 | A4 |\n| 能源消耗總量（GJ） | [X] | [Y] | [Z]% | A4 |\n| 排放強度（tCO2e/住房數） | [X] | [Y] | [Z]% | A4 |\n| 綠電比例 | [X]% | [Y]% | — | A4 |\n| 內部碳定價（NTD/tCO2e）（如有） | [N/A] | — | — | — |\n\n---\n\n## 8. 未達標誠實揭露（反綠色洗白）\n\n| 項目 | 計畫 | 實際 | 原因 | 調整 |\n|---|---|---|---|---|\n| 全據點 LED 完成 | 2023 全部完成 | 完成直營三館 80%，委託二館未啟動 | 委託經營邊界協商耗時 | 與委託方 2024 Q1 簽 MOU，2024 Q4 完成 |\n| Scope 3 全類別盤查 | 2023 完成 C1/C4/C6/C7 | 僅完成 C1/C6/C7 | C4 上游運輸資料缺口 | 2024 與物流商建立資料交換機制 |\n\n---\n\n## 9. 展望（Outlook）\n\n本公司氣候揭露目前處於 **TCFD 對齊、ISSB 過渡** 階段。2028 年金管會強制 ISSB S2 適用前，將在 2025–2027 年期間：\n\n1. 完成 Scope 3 全部相關類別盤查（除已排除的 C11 — 客戶體驗端用電已併入 S2）\n2. 提交 SBTi 1.5°C 路徑承諾（2027 前）\n3. 第三方確信由「有限確信」升級至「合理確信」（2029 目標）\n4. 與集團母公司力麗 / 力鵬紡織業同步淨零路徑（2050）\n\n---\n\n## 10. 章節檢核（依 SOP）\n\n| 檢核 | 通過 |\n|---|---|\n| IRO 連結性（§1） | ✅ 三類各列舉 |\n| 治理連結（§2） | ✅ 董事會 → 委員會 → 副總 → 辦公室 |\n| 策略連結（§3） | ✅ 三層策略整合公司整體營運 |\n| 行動與資源（§5） | ✅ 列具體行動 + 資源欄（部分占位待實填） |\n| 目標含基線 / 時程 / 驗證（§6） | ✅ 7 項目標皆具三要素 |\n| 未達標揭露（§8） | ✅ 兩項實質揭露 |\n\n---\n\n## 11. 數據鏈接（連結性追蹤）\n\n本章引用之數據皆來自 `phase4-data-pack.xlsx`：\n\n| 章節段落 | xlsx Sheet | 公式 / 範圍 |\n|---|---|---|\n| §1.1 Scope 排放 | `04_GHG_S1`, `05_GHG_S2`, `06_GHG_S3` | SUM by Scenario |\n| §5 行動投入金額 | `01_Versions`（外部欄）+ 財務系統 | 部門年度永續預算 |\n| §6 目標基線 | `04/05/06_GHG_*` 2023 行 | 對應 base year |\n| §7 KPI 趨勢 | 各 sheet `YoY_%` 欄 | 公式自動計算 |\n| §8 未達標 | `01_Versions` Restatement_Flag | 跨年差異追蹤 |\n\n---\n\n## 12. GRI / SASB / TCFD / ISSB 對照（章節層級）\n\n| 標準 | 揭露項 | 本章涵蓋 |\n|---|---|---|\n| GRI 305-1 | Scope 1 | §1.1, §7 |\n| GRI 305-2 | Scope 2（雙軌） | §7 |\n| GRI 305-3 | Scope 3 | §7 |\n| GRI 305-4 | 排放強度 | §7 |\n| GRI 305-5 | 排放減量 | §6 |\n| GRI 302-1, 302-3, 302-4 | 能源 | §5, §7 |\n| TCFD G | 治理 | §2 |\n| TCFD S | 策略 + 情境 | §3 |\n| TCFD R | 風險管理 | §4 |\n| TCFD M&T | 指標與目標 | §6, §7 |\n| SASB SV-HL-130a.1 | 能源管理 | §5, §7 |\n| ISSB S2 §29–§32 | 治理 / 策略 / 風險 / 指標 | §2–§7 |\n",
+      "order": 5,
+      "framework_refs": [
+        "tcfd",
+        "issb-s2",
+        "gri-305",
+        "gri-302",
+        "sasb-hl"
+      ],
+      "owner": "永續發展辦公室"
+    }
+  ],
+  "materiality_matrix": {
+    "embedded_svg": "",
+    "core_topics": [
+      "topics/E1-climate",
+      "topics/E2-energy",
+      "topics/G2-integrity",
+      "topics/G3-compliance",
+      "topics/S1-labor-conditions",
+      "topics/S4-occupational-health",
+      "topics/S6-food-safety",
+      "topics/S7-customer-privacy",
+      "topics/S8-customer-experience"
+    ],
+    "material_topics": [
+      "topics/E3-water",
+      "topics/E4-waste",
+      "topics/E6-local-food",
+      "topics/E7-biodiversity",
+      "topics/G1-governance-structure",
+      "topics/G4-information-security",
+      "topics/G6-strategy-integration",
+      "topics/S10-local-employment",
+      "topics/S11-local-procurement",
+      "topics/S12-indigenous-culture",
+      "topics/S13-supplier-labor",
+      "topics/S2-diversity-inclusion",
+      "topics/S3-training",
+      "topics/S5-mental-health"
+    ],
+    "tier_overrides": []
+  },
+  "iros": [
+    {
+      "iro_slug": "E1-climate-opportunity-sustainable-tourism",
+      "topic_slug": "E1-climate",
+      "iro_type": "Opportunity",
+      "category": "market",
+      "time_horizon": "M",
+      "financial_magnitude": 3.5,
+      "name": "永續旅遊溢價與品牌差異化"
+    },
+    {
+      "iro_slug": "E1-climate-risk-physical-heat-shock",
+      "topic_slug": "E1-climate",
+      "iro_type": "Risk",
+      "category": "physical",
+      "time_horizon": "M",
+      "financial_magnitude": 4.0,
+      "name": "極端氣候與物理風險打擊據點"
+    },
+    {
+      "iro_slug": "E1-climate-risk-transition-carbon-fee",
+      "topic_slug": "E1-climate",
+      "iro_type": "Risk",
+      "category": "transition",
+      "time_horizon": "S",
+      "financial_magnitude": 4.0,
+      "name": "碳費與轉型成本"
+    },
+    {
+      "iro_slug": "E2-energy-opportunity-renewable",
+      "topic_slug": "E2-energy",
+      "iro_type": "Opportunity",
+      "category": "technology",
+      "time_horizon": "M",
+      "financial_magnitude": 4.0,
+      "name": "節能 ROI 與綠電憑證"
+    },
+    {
+      "iro_slug": "E3-water-risk-watershed",
+      "topic_slug": "E3-water",
+      "iro_type": "Risk",
+      "category": "physical",
+      "time_horizon": "M",
+      "financial_magnitude": 3.5,
+      "name": "流域用水限制與費率上揚"
+    },
+    {
+      "iro_slug": "G2-integrity-risk-procurement",
+      "topic_slug": "G2-integrity",
+      "iro_type": "Risk",
+      "category": "legal",
+      "time_horizon": "M",
+      "financial_magnitude": 4.0,
+      "name": "採購弊端與商業道德事件"
+    },
+    {
+      "iro_slug": "G3-compliance-risk-regulation-gap",
+      "topic_slug": "G3-compliance",
+      "iro_type": "Risk",
+      "category": "legal",
+      "time_horizon": "S",
+      "financial_magnitude": 4.0,
+      "name": "法令遵循 gap 與罰款 / 停業"
+    },
+    {
+      "iro_slug": "S1-labor-conditions-impact-employee",
+      "topic_slug": "S1-labor-conditions",
+      "iro_type": "Impact",
+      "category": "operational",
+      "time_horizon": "M",
+      "financial_magnitude": 3.5,
+      "name": "勞動條件對員工福祉的衝擊"
+    },
+    {
+      "iro_slug": "S10-local-employment-impact-economy",
+      "topic_slug": "S10-local-employment",
+      "iro_type": "Impact",
+      "category": "operational",
+      "time_horizon": "L",
+      "financial_magnitude": 3.0,
+      "name": "在地經濟與在地共榮品牌"
+    },
+    {
+      "iro_slug": "S12-indigenous-culture-impact-preservation",
+      "topic_slug": "S12-indigenous-culture",
+      "iro_type": "Impact",
+      "category": "reputational",
+      "time_horizon": "L",
+      "financial_magnitude": 2.5,
+      "name": "明池泰雅族文化保存與差異化體驗"
+    },
+    {
+      "iro_slug": "S4-occupational-health-impact-injury",
+      "topic_slug": "S4-occupational-health",
+      "iro_type": "Impact",
+      "category": "operational",
+      "time_horizon": "S",
+      "financial_magnitude": 3.5,
+      "name": "房務與餐飲職災衝擊員工身心"
+    },
+    {
+      "iro_slug": "S6-food-safety-risk-incident",
+      "topic_slug": "S6-food-safety",
+      "iro_type": "Risk",
+      "category": "operational",
+      "time_horizon": "S",
+      "financial_magnitude": 4.5,
+      "name": "食安事件罰款與商譽損失"
+    },
+    {
+      "iro_slug": "S7-customer-privacy-risk-leak",
+      "topic_slug": "S7-customer-privacy",
+      "iro_type": "Risk",
+      "category": "reputational",
+      "time_horizon": "M",
+      "financial_magnitude": 4.0,
+      "name": "客戶個資外洩"
+    },
+    {
+      "iro_slug": "S8-customer-experience-opportunity-brand",
+      "topic_slug": "S8-customer-experience",
+      "iro_type": "Opportunity",
+      "category": "market",
+      "time_horizon": "M",
+      "financial_magnitude": 4.0,
+      "name": "永續品牌差異化"
+    }
+  ],
+  "kpis_summary": [
+    {
+      "slug": "kpis/employee-turnover",
+      "name": "員工流動率",
+      "unit": "percent",
+      "topic_slug": "S1-labor-conditions",
+      "boundary": "全體員工（254 人，2023）；含正職、約聘、派遣、兼職、房務外包",
+      "formula": "離職人數 / 期初人數",
+      "framework_refs": [
+        "GRI 401-1",
+        "SASB SV-HL-310a"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/food-safety-incidents",
+      "name": "食安事件數（含嚴重度分級）",
+      "unit": "count",
+      "topic_slug": "S6-food-safety",
+      "boundary": "全據點餐飲營業範圍",
+      "formula": "Σ事件數，按嚴重度分級（輕微 / 嚴重 / 致死）",
+      "framework_refs": [
+        "GRI 416-1",
+        "GRI 416-2",
+        "SASB SV-HL（食品供應鏈）"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/ghg-scope1",
+      "name": "GHG Scope 1（範疇一）絕對排放",
+      "unit": "tCO2e",
+      "topic_slug": "E1-climate",
+      "boundary": "營運控制法（含直營三館；Scenario B 含委託二館）",
+      "formula": "Σ(Activity × EF / 1000) over 燃氣鍋爐 / 廚房 / 公務車 / 發電機(備援) / HVAC 制冷劑外洩",
+      "framework_refs": [
+        "GRI 305-1",
+        "GHG Protocol Corporate Standard",
+        "IPCC AR6 GWP"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/ghg-scope2",
+      "name": "GHG Scope 2（範疇二）外購電力排放（雙軌）",
+      "unit": "tCO2e",
+      "topic_slug": "E2-energy",
+      "boundary": "營運控制法",
+      "formula": "地點基礎：tCO2e = 外購電量 kWh × 0.474 (kg CO2e/kWh, 113 年度) / 1000\n市場基礎：tCO2e = (外購電量 - T-REC) × EF / 1000\n",
+      "framework_refs": [
+        "GRI 305-2",
+        "GHG Protocol Scope 2 Guidance",
+        "SASB SV-HL-130a.1"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/ghg-scope3",
+      "name": "GHG Scope 3（範疇三）價值鏈排放",
+      "unit": "tCO2e",
+      "topic_slug": "E1-climate",
+      "boundary": "營運控制法 + 上下游價值鏈",
+      "formula": "Σ(Activity × EF) over C1, C3, C4, C5, C6, C7（C11 排除）",
+      "framework_refs": [
+        "GRI 305-3",
+        "GHG Protocol Scope 3 Standard"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/indigenous-engagement-coverage",
+      "name": "在地原住民議合覆蓋率",
+      "unit": "percent",
+      "topic_slug": "S12-indigenous-culture",
+      "boundary": "馬告生態園區（明池 / 棲蘭）泰雅族部落",
+      "formula": "已議合部落數 / 馬告生態園區範圍內泰雅族部落總數 × 100%",
+      "framework_refs": [
+        "GRI 411-1",
+        "GRI 413-1",
+        "GRI 413-2"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/ohs-injury-rate",
+      "name": "失能傷害頻率 FR / 嚴重率 SR",
+      "unit": "per 1e6 work-hours",
+      "topic_slug": "S4-occupational-health",
+      "boundary": "全體員工 + 承攬商",
+      "formula": "FR = 失能傷害次數 × 1e6 / 工時； SR = 失能傷害日數 × 1e6 / 工時",
+      "framework_refs": [
+        "GRI 403-2",
+        "GRI 403-3"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/privacy-incidents",
+      "name": "顧客隱私事件數（資料外洩）",
+      "unit": "count",
+      "topic_slug": "S7-customer-privacy",
+      "boundary": "訂房系統 / POS / 會員資料庫",
+      "formula": "Σ事件數 + 受影響筆數",
+      "framework_refs": [
+        "GRI 418-1",
+        "SASB SV-HL-230a.1"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    },
+    {
+      "slug": "kpis/water-intensity",
+      "name": "用水強度（m³ / 住房數）",
+      "unit": "m³ / room-night",
+      "topic_slug": "E3-water",
+      "boundary": "各據點，含自來水 / 山泉水 / 地下井水 / 回收水",
+      "formula": "Σ取水量 / Σ住房數",
+      "framework_refs": [
+        "GRI 303-1",
+        "GRI 303-2",
+        "SASB SV-HL-140a.1"
+      ],
+      "latest_value": null,
+      "latest_year": null,
+      "yoy_change_pct": null
+    }
+  ],
+  "targets_summary": [
+    {
+      "slug": "targets/customer-privacy-data-breach-zero",
+      "kpi_slug": "privacy-incidents",
+      "baseline_year": 2023,
+      "baseline_value": 0.0,
+      "target_value": 0.0,
+      "target_year": 2030,
+      "verification_path": "ISO 27001 認證稽核 + 個資法主管機關通報紀錄",
+      "is_quantitative": true
+    },
+    {
+      "slug": "targets/food-safety-zero-incidents",
+      "kpi_slug": "food-safety-incidents",
+      "baseline_year": 2023,
+      "baseline_value": 0.0,
+      "target_value": 0.0,
+      "target_year": 2030,
+      "verification_path": "HACCP 第三方稽核 + 食安委員會年度檢視",
+      "is_quantitative": true
+    },
+    {
+      "slug": "targets/green-electricity-2030",
+      "kpi_slug": "ghg-scope2",
+      "baseline_year": 2023,
+      "baseline_value": 0.0,
+      "target_value": 30.0,
+      "target_year": 2030,
+      "verification_path": "T-REC 憑證 + 自發自用",
+      "is_quantitative": true
+    },
+    {
+      "slug": "targets/local-indigenous-engagement-coverage",
+      "kpi_slug": "indigenous-engagement-coverage",
+      "baseline_year": 2023,
+      "baseline_value": 0.0,
+      "target_value": 100.0,
+      "target_year": 2028,
+      "verification_path": "GRI 411-1 / 413-1 揭露追蹤 + 部落會議出席紀錄第三方查證",
+      "is_quantitative": true
+    },
+    {
+      "slug": "targets/scope12-reduction-2030",
+      "kpi_slug": "ghg-scope2",
+      "baseline_year": 2023,
+      "baseline_value": 0.0,
+      "target_value": 25.0,
+      "target_year": 2030,
+      "verification_path": "第三方有限確信",
+      "is_quantitative": true
+    },
+    {
+      "slug": "targets/tcfd-net-zero-2050",
+      "kpi_slug": "ghg-scope1",
+      "baseline_year": 2023,
+      "baseline_value": 0.0,
+      "target_value": 0.0,
+      "target_year": 2050,
+      "verification_path": "TCFD 揭露追蹤",
+      "is_quantitative": true
+    }
+  ],
+  "gri_content_index_ref": null,
+  "annex": {
+    "project_slug": "2025-sustainability-report"
+  },
+  "invocation_hint": "請呼叫 document-skills:docx skill 建立 Report_2025.docx。\n輸出路徑：C:\\Users\\Mitsusen\\AppData\\Local\\Temp\\susr_docxgen_ef1jgg1w\\lealea-5364/projects/2025-sustainability-report/output/Report_2025.docx\nWorkflow：建立新檔 → docx-js（Node）。\n章節結構：依本 payload chapters[] 與 phase6-docx-prompts.md §2 標準。\n樣式約束：表格 WidthType.DXA、條列 LevelFormat.BULLET（不要 unicode 圓點）；中文 Noto Sans TC、英文 Arial。\n附錄 A GRI Content Index 來源：尚未產生 — 請先跑 Phase 7"
+}

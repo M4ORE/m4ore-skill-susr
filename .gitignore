@@ -25,6 +25,11 @@ venv/
 # Logs
 *.log
 
+# Word / PowerPoint / Excel temporary lock files (auto-created when files open)
+~$*.docx
+~$*.pptx
+~$*.xlsx
+
 # Claude local memory (project-scoped memory not for public repo)
 .claude/memory/
 memory/

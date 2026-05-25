@@ -12,11 +12,11 @@
 ## TL;DR
 
 susr v0.1 是**本地優先（local-first）+ MCP-native + Markdown source of truth** 的 ESG 顧問 Co-pilot。
-顧問 `pip install susr` 後，在 Claude Desktop 聊天介面操作 20 個 MCP tools，
-跑完 Phase 3 雙重重大性評估 / Phase 6 報告書 payload 準備 / Phase 7 差距分析。
+顧問 `pip install susr` 後，在 Claude Desktop 聊天介面操作 21 個 MCP tools，
+跑完 Phase 3 雙重重大性評估 / Phase 6 報告書 payload 準備（含內建 docx 草稿渲染）/ Phase 7 差距分析。
 資料以 Markdown + SQLite + sqlite-vec 留在顧問本機，符合「客戶資料不出機」原則。
 
-- **MVP 已可用**：Phase 3（4 tools）/ Phase 6 payload prep（4 tools）/ Phase 7 gap analysis（4 tools）
+- **MVP 已可用**：Phase 3（4 tools）/ Phase 6 payload prep（4 tools）+ render_docx_simple（1 tool 內建 docx 草稿）/ Phase 7 gap analysis（4 tools）
 - **驗證基準**：力麗觀光（5364, TPEx）lealea-5364 fixture 端到端 walkthrough
 - **測試**：293 passed + 2 skipped（Layer 1 lint + Layer 2 scenario + Layer 3 invariant + Layer 4 unit）
 - **誠實揭露**：Phase 4 GHG 計算引擎 / Phase 5 章節自動草稿 / Phase 8 公告流程**尚未實作**
@@ -148,7 +148,7 @@ Phase 2  Research             ── ⚙️  WebSearch + shared_kb/regulations
 Phase 3  Double Materiality   ── ✅ MVP v0.1（4 MCP tools 端到端）
 Phase 4  Data Engineering     ── ❌ 未實作（顧問仍用 xlsx skill 手算 GHG）
 Phase 5  Content Drafting     ── ❌ 未自動草稿（章節骨架 + IRO 已有）
-Phase 6  Report Assembly      ── ✅ Payload prep v0.1（4 tools，docx/pdf/pptx 由 anthropics/skills 渲染）
+Phase 6  Report Assembly      ── ✅ Payload prep v0.1（4 tools）+ ✅ render_docx_simple（內建草稿，python-docx）；docx/pdf/pptx 精修走 anthropics/skills
 Phase 7  Gap Analysis         ── ✅ 4 tools（compliance / GRI Index / assurance readiness / full gap）
 Phase 8  Filing & Improve     ── ❌ 未實作
 ```
@@ -171,7 +171,7 @@ Phase 8  Filing & Improve     ── ❌ 未實作
 四層內部結構（對應三原則文件的「智能層」+「輸入層」+「顧問專屬功能」）：
 
 1. **`susr.brain`** — SQLite + sqlite-vec + FTS5 引擎；17 個 entity types、19 條 typed edges、6 條連結性 invariants（含 R4 拆出的 I1a/I1b），page_versions snapshot + append-only timeline
-2. **`susr.mcp.tools`** — 20 個 MCP tools 跨 Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action / KPI
+2. **`susr.mcp.tools`** — 21 個 MCP tools 跨 Phase 3 / Phase 6 (payload prep + render_docx_simple) / Phase 7 / Workspace / IRO / Action / KPI
 3. **`susr.shared_kb.data`** — pip ship 的常駐知識庫（frameworks / industry-packs / factors / glossary / regulations / checklists / prompts）
 4. **`skills/sustainability-report/`** — Claude Code 用對話路徑（純 SOP guidance，與 brain 並行獨立）
 
@@ -199,7 +199,7 @@ Phase 8  Filing & Improve     ── ❌ 未實作
 
 - ❌ **Phase 4 GHG 計算引擎未實作**：顧問仍用 `xlsx` sub-skill 手算 Scope 1/2/3，susr brain 只存結果不算過程
 - ❌ **Phase 5 章節 LLM 自動草稿未實作**：顧問用 brain 整理素材，章節敘事仍由顧問手寫
-- ❌ **Phase 6 文件渲染由 `anthropics/skills` 處理**：susr 只 prep payload（JSON-able pydantic models），不直接生 docx / pdf / pptx
+- ⚠️ **Phase 6 雙路徑**：susr 內建 `render_docx_simple`（python-docx，適合草稿 / demo / regression）；投資人版 / 監管揭露建議走 `anthropics/skills` 精修（見 [`docs/walkthroughs/lealea-5364-docx-skill.md`](docs/walkthroughs/lealea-5364-docx-skill.md)）。pdf / pptx 仍只走 payload prep
 - ❌ **Phase 8 公告 / MOPS filing 未實作**
 - ⏳ **Claude Desktop stdio transport 端到端未驗證**：dev env 無 mcp SDK，目前所有 tool 驗證均繞 stdio 直呼函式
 - ⏳ **I2 chapter framework 一致性 invariant 仍有 5 violations**：R8-3 backlog
@@ -333,7 +333,7 @@ Zero shell commands after that. Full install path: [`docs/user-guide/README.md`]
 ### MVP Status
 
 - ✅ **Phase 3 (Double Materiality)** — 4 MCP tools end-to-end (topic universe search / dual-axis scoring / matrix generation / stakeholder engagement helper)
-- ✅ **Phase 6 (Payload Prep)** v0.1 — 4 tools (docx / pdf / pptx investor deck / pptx board deck); actual rendering delegated to `anthropics/skills`
+- ✅ **Phase 6 (Payload Prep)** v0.1 — 4 tools (docx / pdf / pptx investor deck / pptx board deck) + ✅ **`render_docx_simple`** (built-in python-docx draft renderer); investor-grade / regulatory disclosure → `anthropics/skills`
 - ✅ **Phase 7 (Gap Analysis)** — 4 tools (compliance checklist / GRI Content Index / assurance readiness / full gap analysis)
 - ❌ Phase 4 (GHG calculation engine) — not implemented; consultants still use the `xlsx` sub-skill manually
 - ❌ Phase 5 (LLM chapter drafting) — not implemented; consultants write narrative themselves on top of brain-managed material
@@ -345,7 +345,7 @@ Zero shell commands after that. Full install path: [`docs/user-guide/README.md`]
 Four internal layers:
 
 1. **`susr.brain`** — SQLite + sqlite-vec + FTS5; 17 entity types, 19 typed edges, 6 connectivity invariants (incl. R4-split I1a / I1b), `page_versions` snapshot + append-only `timeline_entries`
-2. **`susr.mcp.tools`** — 20 MCP tools across Phase 3 / Phase 6 / Phase 7 / Workspace / IRO / Action / KPI
+2. **`susr.mcp.tools`** — 21 MCP tools across Phase 3 / Phase 6 (payload prep + render_docx_simple) / Phase 7 / Workspace / IRO / Action / KPI
 3. **`susr.shared_kb.data`** — pip-shipped knowledge base (frameworks / industry-packs / emission factors / glossary / regulations / checklists / prompts)
 4. **`skills/sustainability-report/`** — Claude Code conversational SOP path (runs in parallel with brain, independent)
 
