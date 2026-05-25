@@ -144,6 +144,10 @@ mandatory: true
 
 ## 下一步
 
-- Phase 5 完成 4 個示範章節（TCFD ⭐ 已產出）+ 食安、隱私、在地三篇可依此 SOP 後續展開
-- Phase 6 — 將草稿與 Phase 4 數據包送 docx / pdf / pptx skill 組裝
-- Phase 7 — 對照力麗 2023 PDF 章節結構，找差異
+- ✅ Phase 5 示範章節進度：
+  - ✅ `tcfd-2025.md` ⭐ (E1, E2 — TCFD 4 構面完整示範)
+  - ✅ `food-safety-2025.md` ⭐⭐ (S6 — R7-A 補)
+  - ✅ `customer-privacy-2025.md` ⭐ (S7, G4 — R7-A 補)
+  - ✅ `local-indigenous-2025.md` ⭐ (S10, S12 — R7-A 補)
+- Phase 6 — 將草稿與 Phase 4 數據包送 docx / pdf / pptx skill 組裝（susr Phase 6 v0.1 payload prep 已 ready）
+- Phase 7 — 對照力麗 2023 PDF 章節結構，找差異（susr Phase 7 gap analysis 4 tools 已 ready）

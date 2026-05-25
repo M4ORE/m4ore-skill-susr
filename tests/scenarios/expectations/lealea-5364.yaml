@@ -640,3 +640,61 @@ entities_iros_s12_indigenous_culture:
     - "topic_slug: S12-indigenous-culture"
     - "type: impact"
   min_lines: 8
+
+# ---------------------------------------------------------------------------
+# R7-A 補：剩餘章節 frontmatter (food-safety / customer-privacy / local-indigenous)
+# ---------------------------------------------------------------------------
+
+projects_2025_chapter_food_safety:
+  file: projects/2025-sustainability-report/chapters/food-safety-2025.md
+  description: S6 食安章節 — 行業特化（HACCP / 過敏原 / 食材里程 / 山區冷鏈）
+  must_contain:
+    - "entity_type: chapter"
+    - "S6-food-safety"
+    - "GRI 416"
+    - "食品安全"
+    - "IRO"
+    - "治理"
+    - "目標"
+    - "KPI"
+  must_contain_any:
+    - "HACCP"
+    - "過敏原"
+    - "食材"
+  min_lines: 80
+
+projects_2025_chapter_customer_privacy:
+  file: projects/2025-sustainability-report/chapters/customer-privacy-2025.md
+  description: S7 + G4 顧客隱私章節 — 旅館業 PII 特化（會員 / 訂房 / 監控影像）
+  must_contain:
+    - "entity_type: chapter"
+    - "S7-customer-privacy"
+    - "GRI 418"
+    - "個資"
+    - "IRO"
+    - "治理"
+    - "目標"
+    - "KPI"
+  must_contain_any:
+    - "ISO 27001"
+    - "PII"
+    - "信用卡"
+  min_lines: 80
+
+projects_2025_chapter_local_indigenous:
+  file: projects/2025-sustainability-report/chapters/local-indigenous-2025.md
+  description: S10 + S12 在地共融與文化保存章節 — 旅館業特化（明池泰雅族 / 在地僱用）
+  must_contain:
+    - "entity_type: chapter"
+    - "S12-indigenous-culture"
+    - "GRI 411"
+    - "原住民"
+    - "IRO"
+    - "治理"
+    - "目標"
+    - "KPI"
+  must_contain_any:
+    - "明池"
+    - "泰雅"
+    - "在地"
+  min_lines: 80
