@@ -1,0 +1,217 @@
+# Layer 4 embedding benchmark — retrieval corpus
+#
+# 來源:examples/lealea-5364/phase3-materiality.md(28 項議題池) + 補充框架 / KPI 條目
+# 共 40 條 — 涵蓋 28 個議題 + 部分 KPI 定義 + 部分章節描述
+#
+# Schema:
+#   - id:         唯一識別(slug 風格)
+#   - text:       內文(retrieval 比對的本體)
+#   - topic_slug: 對應 queries.yaml expected_topics 的 ground truth label
+#                 corpus 一條對 1 個主 topic_slug(該議題的代表段)
+#   - metadata:
+#       framework_ref: 對應框架(GRI / ISSB / TCFD / 金管會)
+#       length:        粗略長度(short / medium / long)
+#       kind:          topic_definition | kpi | chapter_excerpt | iro_excerpt
+#
+# 設計原則:
+# - 一個 topic_slug 可能有多條(例如 E1 climate 有議題定義 + KPI + IRO 三條)
+#   → 模擬真實 brain 內同議題多面相 page,測試 retrieval 是否撈到「正確 topic」
+# - 故意混雜不同長度 / 不同 framework code 出現位置,逼模型分辨 semantic vs lexical
+
+corpus:
+
+  # ======== E 環境 ========
+
+  - id: E1-climate-def
+    text: "氣候變遷與低碳轉型:旅館業營運高度依賴電力與天然氣、空調冷暖系統運轉,且台灣氣候變遷會影響觀光客流量。本議題對應 TCFD 與 IFRS S2 氣候相關財務揭露,包含轉型風險、實體風險、機會三大面向。"
+    topic_slug: E1-climate
+    metadata: { framework_ref: "TCFD / IFRS S2", length: medium, kind: topic_definition }
+
+  - id: E1-climate-kpi-scope1
+    text: "KPI:範疇一直接溫室氣體排放(Scope 1 GHG Emissions),單位 tCO2e,涵蓋鍋爐、緊急發電機、公務車輛、冷媒洩漏。對應 GRI 305-1。"
+    topic_slug: E1-climate
+    metadata: { framework_ref: "GRI 305-1", length: short, kind: kpi }
+
+  - id: E1-climate-iro-transition
+    text: "轉型風險:碳費徵收(環境部規劃)導致營運成本上升;機會:取得綠電憑證可作為永續旅遊高溢價賣點。"
+    topic_slug: E1-climate
+    metadata: { framework_ref: "TCFD", length: short, kind: iro_excerpt }
+
+  - id: E2-energy-def
+    text: "能源管理:HVAC 空調系統佔旅館能耗 40-60%,山區據點冬季供暖負荷重。需追蹤能源密集度、再生能源使用比、節能投資。"
+    topic_slug: E2-energy
+    metadata: { framework_ref: "GRI 302", length: medium, kind: topic_definition }
+
+  - id: E2-energy-kpi
+    text: "KPI:單位住房能源消耗(MJ/room-night),分電力、天然氣、再生能源比。年度節能投資 ROI 追蹤。"
+    topic_slug: E2-energy
+    metadata: { framework_ref: "GRI 302-1, 302-3", length: short, kind: kpi }
+
+  - id: E3-water-def
+    text: "水資源管理(Water Resource Management):房客平均用水高,南投日月潭與宜蘭山區據點位於水資源敏感區。需揭露取水量、排水量、循環用水率,並進行流域風險評估。"
+    topic_slug: E3-water
+    metadata: { framework_ref: "GRI 303 / SASB Hotels", length: medium, kind: topic_definition }
+
+  - id: E3-water-kpi
+    text: "KPI:每房住宿用水量(litre/room-night),自來水 vs 山泉水 / 地下水比例,雨水回收與中水回用率。"
+    topic_slug: E3-water
+    metadata: { framework_ref: "GRI 303-3, 303-5", length: short, kind: kpi }
+
+  - id: E4-waste-def
+    text: "廢棄物與循環經濟:客房一次性備品(牙刷、拖鞋、瓶裝水)與廚餘佔旅館垃圾大宗。對應循環經濟轉型,需追蹤資源回收率與重複使用率。"
+    topic_slug: E4-waste
+    metadata: { framework_ref: "GRI 306", length: medium, kind: topic_definition }
+
+  - id: E5-wastewater-def
+    text: "廢水排放:餐飲區域油脂截留、洗滌用化學品殘留,以及山區據點無下水道接管的就地處理問題。明池 / 棲蘭尤其受規範。"
+    topic_slug: E5-wastewater
+    metadata: { framework_ref: "水污染防治法", length: medium, kind: topic_definition }
+
+  - id: E6-food-miles-def
+    text: "食材里程與在地採購:與氣候議題連動。南投、宜蘭農場直送可大幅降低運輸碳排,同時支持地方經濟。"
+    topic_slug: E6-food-miles
+    metadata: { framework_ref: "GRI 204", length: medium, kind: topic_definition }
+
+  - id: E7-biodiversity-def
+    text: "生物多樣性與生態保育:明池與棲蘭山莊位於馬告生態園區,屬於生態敏感區。需進行棲地影響評估、外來種管理、原生種復育合作。"
+    topic_slug: E7-biodiversity
+    metadata: { framework_ref: "GRI 304 / TNFD", length: medium, kind: topic_definition }
+
+  - id: E7-biodiversity-iro
+    text: "Impact:山區據點對當地林相與野生動物棲地的影響;Opportunity:生態旅遊產品差異化、認證 (B Corp / 環保標章)。"
+    topic_slug: E7-biodiversity
+    metadata: { framework_ref: "TNFD", length: short, kind: iro_excerpt }
+
+  - id: E8-air-pollution-def
+    text: "空氣污染:餐廳廚房油煙排放、鍋爐 NOx 與 SOx 排放。需符合空氣污染防制法之固定污染源許可。"
+    topic_slug: E8-air-pollution
+    metadata: { framework_ref: "空氣污染防制法", length: short, kind: topic_definition }
+
+  # ======== S 社會 ========
+
+  - id: S1-labor-def
+    text: "員工權益與勞動條件:餐飲房務輪班與夜班、加班費合規、最低薪資保障。勞檢風險集中於工時記錄與外包人員管理。"
+    topic_slug: S1-labor-conditions
+    metadata: { framework_ref: "GRI 401 / 勞基法", length: medium, kind: topic_definition }
+
+  - id: S2-dei-def
+    text: "員工多元包容與平等(Diversity, Equity, Inclusion / DEI):房務外包、移工管理、女性主管比例、不同年齡層員工發展機會。對應 GRI 405。"
+    topic_slug: S2-diversity-inclusion
+    metadata: { framework_ref: "GRI 405", length: medium, kind: topic_definition }
+
+  - id: S2-dei-kpi
+    text: "KPI:女性主管佔比、移工人數佔總員工比、不同年齡層員工分布、薪資性別差距。"
+    topic_slug: S2-diversity-inclusion
+    metadata: { framework_ref: "GRI 405-1, 405-2", length: short, kind: kpi }
+
+  - id: S3-training-def
+    text: "員工培訓與發展:旅館業流動率高(業界 30%+ turnover),培訓投資的留任率回報是重大議題。需追蹤平均訓練時數、晉升內升比、職涯路徑覆蓋率。"
+    topic_slug: S3-training-development
+    metadata: { framework_ref: "GRI 404", length: medium, kind: topic_definition }
+
+  - id: S4-health-safety-def
+    text: "員工健康安全:餐飲燙傷與切割傷、房務肌肉骨骼傷害、夜班疲勞。對應 GRI 403 職業安全衛生 OHS。"
+    topic_slug: S4-occupational-health-safety
+    metadata: { framework_ref: "GRI 403", length: medium, kind: topic_definition }
+
+  - id: S4-ohs-kpi
+    text: "KPI:失能傷害頻率 FR、失能傷害嚴重率 SR、職災請假天數、職業病案件數、工安教育訓練時數。"
+    topic_slug: S4-occupational-health-safety
+    metadata: { framework_ref: "GRI 403-9", length: short, kind: kpi }
+
+  - id: S5-mental-health-def
+    text: "員工心理健康:服務業情緒勞動(emotional labor)、客訴處理壓力、長工時造成的職業倦怠。提供 EAP 員工協助方案與心理諮商資源。"
+    topic_slug: S5-mental-health
+    metadata: { framework_ref: "GRI 403-6", length: medium, kind: topic_definition }
+
+  - id: S6-food-safety-def
+    text: "客戶健康安全(食品安全):HACCP 危害分析重要管制點認證、食安事件回應 SOP、過敏原標示、供應商食安稽核。任何食物中毒事件都會直接衝擊品牌。"
+    topic_slug: S6-food-safety
+    metadata: { framework_ref: "GRI 416 / 食品安全衛生管理法", length: medium, kind: topic_definition }
+
+  - id: S6-food-safety-kpi
+    text: "KPI:HACCP 認證據點數、食安事件件數(含通報、客訴、行政罰)、食安教育訓練覆蓋率。"
+    topic_slug: S6-food-safety
+    metadata: { framework_ref: "GRI 416-2", length: short, kind: kpi }
+
+  - id: S7-privacy-def
+    text: "客戶隱私與資料保護(Customer Privacy):訂房系統 PII(姓名、護照、信用卡)、會員卡資料、跨境傳輸(境外旅客)。受個資法、GDPR(若有歐盟客)約束。"
+    topic_slug: S7-customer-privacy
+    metadata: { framework_ref: "GRI 418 / 個資法", length: medium, kind: topic_definition }
+
+  - id: S7-privacy-iro
+    text: "Risk:個資外洩造成個資法行政罰與信任崩潰;Opportunity:取得 ISO 27001 / BS 10012 認證作為差異化賣點。"
+    topic_slug: S7-customer-privacy
+    metadata: { framework_ref: "ISO 27001", length: short, kind: iro_excerpt }
+
+  - id: S8-customer-experience-def
+    text: "客戶體驗與滿意度:OTA 評論(Booking / Agoda / TripAdvisor)、口碑管理、客訴處理時效、Net Promoter Score。負評可在 24h 內擴散全網。"
+    topic_slug: S8-customer-experience
+    metadata: { framework_ref: "SASB Hotels", length: medium, kind: topic_definition }
+
+  - id: S9-fair-trade-def
+    text: "公平交易與廣告倫理:不實宣傳(例如過度誇大永續訴求 — 漂綠 greenwashing)、價格透明、訂房規則公平。"
+    topic_slug: S9-fair-trade
+    metadata: { framework_ref: "公平交易法", length: short, kind: topic_definition }
+
+  - id: S10-local-employment-def
+    text: "在地社區僱用:南投與宜蘭山區據點所在地的居民僱用比例,是地方經濟與飯店營運社會許可的雙向綁定。"
+    topic_slug: S10-local-employment
+    metadata: { framework_ref: "GRI 202-2 / GRI 413", length: medium, kind: topic_definition }
+
+  - id: S11-local-procurement-def
+    text: "在地採購:食材在地化(50km 內優先)、原住民工藝品採購(明池泰雅族手工藝)。"
+    topic_slug: S11-local-procurement
+    metadata: { framework_ref: "GRI 204-1", length: short, kind: topic_definition }
+
+  - id: S12-cultural-def
+    text: "文化保存與原民共榮:馬告生態園區內的泰雅族部落合作、文化導覽、傳統知識授權使用、敏感聖地保護。明池據點獨有特色議題。"
+    topic_slug: S12-cultural-preservation
+    metadata: { framework_ref: "GRI 411 / UNDRIP", length: medium, kind: topic_definition }
+
+  - id: S13-supply-chain-labor-def
+    text: "供應鏈勞工人權:餐飲食材農工(東南亞外籍漁工 / 農工)、紡織備品供應商(集團內 1444 / 1447 紡織業)勞動條件稽核。"
+    topic_slug: S13-supply-chain-labor
+    metadata: { framework_ref: "GRI 414 / UNGP", length: medium, kind: topic_definition }
+
+  - id: S14-supply-chain-env-def
+    text: "供應鏈環境管理:食材碳足跡(scope 3 cat 1 採購商品)、布巾染整廢水、清潔劑化學品來源管理。"
+    topic_slug: S14-supply-chain-environment
+    metadata: { framework_ref: "GRI 308 / CDP Supply Chain", length: medium, kind: topic_definition }
+
+  # ======== G 治理 ========
+
+  - id: G1-governance-def
+    text: "公司治理結構:董事會多元組成、獨立董事比例、ESG 專業 director 配置、母子公司利益衝突管理(集團型企業特殊風險)。"
+    topic_slug: G1-governance-structure
+    metadata: { framework_ref: "金管會公司治理評鑑", length: medium, kind: topic_definition }
+
+  - id: G2-ethics-def
+    text: "商業道德與誠信經營:採購回扣、賄賂風險(食材議價 / 工程發包)、員工誠信通報管道(吹哨者保護)。"
+    topic_slug: G2-business-ethics
+    metadata: { framework_ref: "GRI 205 / 金管會強制揭露", length: medium, kind: topic_definition }
+
+  - id: G3-compliance-def
+    text: "法令遵循與風險管理:觀光發展條例、食品衛生管理法、消防法、勞動基準法、個資法等多軸合規矩陣。"
+    topic_slug: G3-legal-compliance
+    metadata: { framework_ref: "GRI 2-27", length: medium, kind: topic_definition }
+
+  - id: G4-cybersecurity-def
+    text: "資訊安全與營運韌性:訂房系統、POS、會員系統的資安事件回應 SOP、滲透測試、災害復原 DR 計畫。"
+    topic_slug: G4-cybersecurity
+    metadata: { framework_ref: "ISO 27001 / NIST CSF", length: medium, kind: topic_definition }
+
+  - id: G5-aml-def
+    text: "反貪腐反洗錢:大額住宿(境外旅客現金 / 加密貨幣支付)的洗錢風險、政治公開人物 PEP 客戶識別。"
+    topic_slug: G5-anti-corruption-aml
+    metadata: { framework_ref: "洗錢防制法", length: short, kind: topic_definition }
+
+  - id: G6-strategy-def
+    text: "永續策略整合與目標管理:中等揭露年資(第 3 本報告書),需強化長期策略整合、Net Zero 路徑承諾、董事會 ESG 議題定期檢視。"
+    topic_slug: G6-strategy
+    metadata: { framework_ref: "ISSB IFRS S1 / TCFD Strategy", length: medium, kind: topic_definition }
+
+  - id: G6-strategy-target
+    text: "Target:2030 範疇一 / 二減排 30%(以 2023 為基準年);2050 全集團 Net Zero 路徑;每年董事會 ESG 議題檢視 ≥ 2 次。"
+    topic_slug: G6-strategy
+    metadata: { framework_ref: "SBTi", length: short, kind: kpi }

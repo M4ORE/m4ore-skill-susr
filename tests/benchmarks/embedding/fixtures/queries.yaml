@@ -1,0 +1,141 @@
+# Layer 4 embedding benchmark — query fixtures
+#
+# 來源：examples/lealea-5364/phase3-materiality.md（28 項議題池 + IRO 對應）
+# 共 22 queries,4 大類混合,模擬顧問實際在 Claude Desktop 內問 susr brain 的字串。
+#
+# Schema:
+#   - query:           顧問實際會打的字串(中文 / 英文 / 混雜)
+#   - expected_topics: list of corpus.yaml 內的 topic_slug,該 query 應該 retrieve 到的 ground truth
+#                      (任一命中 = Recall@k hit,順序計入 MRR)
+#   - category:        exact_code | semantic | mixed_zh_en | fuzzy
+#                      → 提供 by-category 拆解,看模型在哪類查詢勝出
+#   - notes:           給人類 review 時看的補充
+
+queries:
+
+  # ===========================================================
+  # category: exact_code(框架代碼 / 標準編號精準命中)
+  # 預期 FTS5 BM25 也能搞定,embedding 不應該輸太多
+  # ===========================================================
+
+  - query: "GRI 305-1"
+    expected_topics: [E1-climate, E2-energy]
+    category: exact_code
+    notes: "GRI 305-1 直接排放(Scope 1),最常被顧問複製貼上"
+
+  - query: "Scope 3 類別 11"
+    expected_topics: [E1-climate, S13-supply-chain-labor]
+    category: exact_code
+    notes: "GHG Protocol Scope 3 Category 11 = 售出產品使用,旅館業偏邊緣"
+
+  - query: "TCFD 氣候相關財務揭露"
+    expected_topics: [E1-climate, G6-strategy]
+    category: exact_code
+    notes: "金管會 2026 加嚴前舊框架,但仍主流"
+
+  - query: "GRI 403 職業安全衛生"
+    expected_topics: [S4-occupational-health-safety]
+    category: exact_code
+
+  - query: "HACCP"
+    expected_topics: [S6-food-safety]
+    category: exact_code
+    notes: "餐飲業必備食安系統認證"
+
+  # ===========================================================
+  # category: semantic(同義 / 換句話說,純語意 retrieval)
+  # embedding 真正勝場;FTS5 不該贏
+  # ===========================================================
+
+  - query: "公司用了多少水"
+    expected_topics: [E3-water]
+    category: semantic
+    notes: "顧問口頭問,corpus 用 '水資源管理 / withdrawal' 等正式術語"
+
+  - query: "員工會不會做到一半離職"
+    expected_topics: [S3-training-development, S1-labor-conditions]
+    category: semantic
+    notes: "業界 30%+ 流動率痛點;corpus 用 'turnover / 流動率'"
+
+  - query: "客人吃壞肚子怎麼辦"
+    expected_topics: [S6-food-safety]
+    category: semantic
+    notes: "口語問食安事件處理"
+
+  - query: "山上飯店生態保育"
+    expected_topics: [E7-biodiversity]
+    category: semantic
+    notes: "明池 / 棲蘭山莊 — 馬告生態園區語境"
+
+  - query: "員工心情不好工作壓力大"
+    expected_topics: [S5-mental-health, S4-occupational-health-safety]
+    category: semantic
+    notes: "服務業情緒勞動 / 客訴壓力,非正式用詞"
+
+  - query: "在地原住民部落合作"
+    expected_topics: [S12-cultural-preservation, S10-local-employment]
+    category: semantic
+    notes: "宜蘭明池泰雅族部落"
+
+  # ===========================================================
+  # category: mixed_zh_en(中英混雜 — ESG 顧問最常見的真實口吻)
+  # 對中英並重訓練的模型最有利
+  # ===========================================================
+
+  - query: "Scope 1 範疇一排放怎麼算"
+    expected_topics: [E1-climate, E2-energy]
+    category: mixed_zh_en
+
+  - query: "客戶 PII 資料保護"
+    expected_topics: [S7-customer-privacy]
+    category: mixed_zh_en
+    notes: "PII = Personally Identifiable Information,業界縮寫"
+
+  - query: "OTA 評論口碑管理"
+    expected_topics: [S8-customer-experience]
+    category: mixed_zh_en
+    notes: "OTA = Online Travel Agency,旅館業必懂"
+
+  - query: "HVAC 空調節能"
+    expected_topics: [E2-energy]
+    category: mixed_zh_en
+    notes: "HVAC = Heating, Ventilation, Air Conditioning,旅館 40-60% 能耗"
+
+  - query: "Net Zero 碳中和路徑"
+    expected_topics: [E1-climate, G6-strategy]
+    category: mixed_zh_en
+
+  - query: "DEI 多元包容 KPI"
+    expected_topics: [S2-diversity-inclusion]
+    category: mixed_zh_en
+    notes: "DEI = Diversity, Equity, Inclusion"
+
+  # ===========================================================
+  # category: fuzzy(模糊 / 多概念混合 / 反向描述)
+  # 最考驗模型的「理解」能力
+  # ===========================================================
+
+  - query: "顧客投訴最多的是哪方面"
+    expected_topics: [S8-customer-experience, S6-food-safety]
+    category: fuzzy
+    notes: "可能跨多議題,模糊"
+
+  - query: "供應商管理裡面跟人權有關的"
+    expected_topics: [S13-supply-chain-labor, S14-supply-chain-environment]
+    category: fuzzy
+    notes: "兩層複合:供應鏈 × 人權"
+
+  - query: "金管會強制要揭露的項目"
+    expected_topics: [G1-governance-structure, G2-business-ethics, G3-legal-compliance]
+    category: fuzzy
+    notes: "G 系列廣覆蓋,模糊"
+
+  - query: "報告書裡寫氣候風險的章節要對應什麼框架"
+    expected_topics: [E1-climate, G6-strategy]
+    category: fuzzy
+    notes: "從產出反推議題,需理解語境"
+
+  - query: "餐廳廚房會排放什麼污染物"
+    expected_topics: [E8-air-pollution, E5-wastewater, E4-waste]
+    category: fuzzy
+    notes: "油煙 + 廢水 + 廚餘三重命中"

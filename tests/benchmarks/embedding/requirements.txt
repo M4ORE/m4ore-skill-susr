@@ -1,0 +1,18 @@
+# Layer 4 embedding benchmark — runtime requirements
+# 安裝：pip install -r tests/benchmarks/embedding/requirements.txt
+#
+# 註：susr 主 package 不依賴本檔，這份只給 benchmark harness 用。
+# 顧問本機如果沒裝 ML 棧，可只挑想跑的 provider（OpenAI cloud / BGE-M3 local / Qwen3 local）對應 dependencies。
+
+# --- 共用 ----------------------------------------------------------------
+numpy>=1.24          # 向量運算 / cosine similarity
+pyyaml>=6.0          # 載入 queries.yaml / corpus.yaml fixtures
+
+# --- 本地模型（BGE-M3 / Qwen3-Embedding） -------------------------------
+# sentence-transformers 3.x 支援 Qwen3-Embedding（HF transformers 後端）+ BGE-M3
+# 兩者皆透過此一介面載入,共用 torch backend
+sentence-transformers>=3.0
+torch>=2.0           # CPU/CUDA/MPS backend;Apple Silicon 自動走 MPS
+
+# --- OpenAI cloud provider ---------------------------------------------
+openai>=1.0          # text-embedding-3-large client
