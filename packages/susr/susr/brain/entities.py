@@ -13,9 +13,9 @@ R2: fill each model with the required + optional fields from spec §2.3 table.
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Sequence
+from typing import Any, Literal, Optional, Sequence
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 
 # ---------------------------------------------------------------------------
@@ -288,12 +288,73 @@ assert set(ENTITY_SCHEMAS.keys()) == set(ENTITY_TYPES), \
     "ENTITY_SCHEMAS drifted from ENTITY_TYPES — keep them in lock-step"
 
 
-def validate_frontmatter(entity_type: str, payload: dict) -> BaseModel:
-    """Validate raw YAML frontmatter against the matching entity schema.
+def validate_frontmatter(entity_type: str, payload: dict[str, Any]) -> BaseModel:
+    """驗證原始 YAML frontmatter，回傳解析後的 Pydantic 物件。
 
-    Returns the parsed Pydantic instance; raises pydantic.ValidationError
-    on missing required fields.
-
-    R2: implement and also flag deprecated keys / unknown extras.
+    Raises:
+        KeyError: ``entity_type`` 不在 ENTITY_SCHEMAS。
+        pydantic.ValidationError: 必填欄位缺失 / 型別不符。
     """
-    raise NotImplementedError("Step 1 R2 — see docs/research/step1-spec.md §2.3")
+    if entity_type not in ENTITY_SCHEMAS:
+        raise KeyError(
+            f"unknown entity_type {entity_type!r}; expected one of {sorted(ENTITY_SCHEMAS)}"
+        )
+    schema_cls = ENTITY_SCHEMAS[entity_type]
+    return schema_cls.model_validate(payload)
+
+
+# ---------------------------------------------------------------------------
+# Frontmatter ↔ dict helpers
+#
+# brain.pages stores frontmatter via the entity_attributes table, but MCP
+# tools and tests round-trip the same data as plain dicts.  These helpers
+# centralise the boundary so we keep one definition of "what counts as the
+# canonical frontmatter dict".
+# ---------------------------------------------------------------------------
+
+
+def entity_to_frontmatter(entity: BaseModel) -> dict[str, Any]:
+    """Pydantic entity → plain frontmatter dict (excludes unset None fields).
+
+    ``mode='json'`` ensures things like dates / sets serialize to YAML-safe
+    primitives.  We exclude ``None`` values that are merely defaults so the
+    on-disk YAML stays small.
+    """
+    return entity.model_dump(mode="json", exclude_none=True)
+
+
+def frontmatter_to_entity(entity_type: str, frontmatter: dict[str, Any]) -> BaseModel:
+    """plain dict → 對應 entity 的 Pydantic 物件（等同 validate_frontmatter 別名）。
+
+    Provided as a named pair to ``entity_to_frontmatter`` for callers who
+    prefer the round-trip symmetry; behaviour is identical.
+    """
+    return validate_frontmatter(entity_type, frontmatter)
+
+
+__all__ = [
+    "EntityType",
+    "ENTITY_TYPES",
+    "ENTITY_SCHEMAS",
+    "ClientFrontmatter",
+    "ReportFrontmatter",
+    "ChapterFrontmatter",
+    "TopicFrontmatter",
+    "IroFrontmatter",
+    "StakeholderFrontmatter",
+    "EngagementFrontmatter",
+    "GovernanceFrontmatter",
+    "ActionFrontmatter",
+    "TargetFrontmatter",
+    "KpiFrontmatter",
+    "DatapointFrontmatter",
+    "RegulationFrontmatter",
+    "EmissionFactorFrontmatter",
+    "FrameworkFrontmatter",
+    "PeerCompanyFrontmatter",
+    "SourceDocFrontmatter",
+    "validate_frontmatter",
+    "entity_to_frontmatter",
+    "frontmatter_to_entity",
+    "ValidationError",
+]

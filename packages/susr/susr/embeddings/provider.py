@@ -1,50 +1,45 @@
 """susr.embeddings.provider — EmbeddingProvider Protocol.
 
-Per CLAUDE.md §8 decision 8 ("LLMProvider day-1 抽象") and decision 10
-("Embedding 預設 BGE-M3, Qwen3+OpenAI 列備援"), the brain treats
-embeddings as a swappable Protocol.
+依 CLAUDE.md §8 decision 10 與 spec §5.1，brain 只對 Protocol 編程；
+具體 BGE-M3 / Qwen3 / OpenAI 各自實作，install 時透過 extras 拉依賴。
 
-Spec §5.1 defines the surface; this file is the canonical signature
-that bge_m3 / qwen3 / openai must satisfy.
-
-NB: switching providers between writes is unsafe — vec_chunks.embedding
-is fixed-dimension.  Spec §5.2 explains the rebuild cost.
+設計要點：
+    - 區分 ``embed_query`` 與 ``embed_documents`` 是必要的：
+      BGE-M3 不需特殊 prefix，但 Qwen3 有 instruction-aware prompt，
+      query/document 端要送入不同 prompt 才能拿到正確的對齊向量。
+    - 回傳一律使用 ``numpy.ndarray`` (float32) 對齊 sqlite-vec
+      ``serialize_float32`` 與 R1 benchmark harness wrapper。
+    - ``hosting`` 屬性用於 by-hosting 拆解（local / cloud），對 Q7
+      個資合約風險篩選 provider。
+    - 切 provider 等於重建 vec_chunks (dim 可能不同)，見 spec §5.2。
 """
 
 from __future__ import annotations
 
 from typing import Protocol, Sequence, runtime_checkable
 
+import numpy as np
+
 
 @runtime_checkable
 class EmbeddingProvider(Protocol):
-    """Pluggable text → vector encoder.
+    """可插拔的文字 → 向量編碼器。
 
     Implementations MUST:
-        - have a stable `dimension` matching the vec_chunks schema
-        - support both single-query and batch embedding paths
-        - be safe to call from sync context (use background thread for IO if needed)
+        - 提供穩定的 ``name`` / ``dimension`` / ``hosting`` 屬性
+          (class attribute 或 instance attribute 皆可)
+        - 支援 single-query 與 batch document 兩條路徑
+        - 在 sync 環境下安全呼叫
     """
 
-    @property
-    def dimension(self) -> int:
-        """Vector size produced; MUST equal vec_chunks.embedding declared dim."""
+    name: str
+    dimension: int
+    hosting: str  # "local" | "cloud"
+
+    def embed_query(self, text: str) -> np.ndarray:
+        """編碼單一查詢字串。回傳形狀 ``(dimension,)`` 的 ndarray。"""
         ...
 
-    @property
-    def name(self) -> str:
-        """Stable identifier, e.g. 'bge:bge-m3', 'openai:text-embedding-3-large'."""
-        ...
-
-    @property
-    def hosting(self) -> str:
-        """Either 'local' (no network) or 'cloud' (external API call)."""
-        ...
-
-    def embed_query(self, text: str) -> list[float]:
-        """Encode a single query string. Returns a vector of length `dimension`."""
-        ...
-
-    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
-        """Batch-encode document chunks. Returns one vector per input text."""
+    def embed_documents(self, texts: Sequence[str]) -> np.ndarray:
+        """批次編碼文件 chunk。回傳形狀 ``(len(texts), dimension)`` 的 ndarray。"""
         ...

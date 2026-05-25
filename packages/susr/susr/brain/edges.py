@@ -14,7 +14,8 @@ R2: implement validate_edge + supply EDGE_DOCS for tooltips.
 
 from __future__ import annotations
 
-from typing import NamedTuple
+from dataclasses import dataclass, field
+from typing import Any, NamedTuple, Optional
 
 from susr.brain.entities import EntityType
 
@@ -63,13 +64,56 @@ class InvariantError(Exception):
 
 
 def validate_edge(src_type: EntityType, edge_type: str, dst_type: EntityType) -> None:
-    """Reject unknown edge_type or src/dst type mismatch.
+    """檢查 ``edge_type`` 已註冊且 ``src/dst`` entity_type 對應正確。
 
-    Called by BrainEngine.link() before INSERT into the links table.
+    Raises ``InvariantError`` so the caller can fail-close per spec §2.5.
     """
-    raise NotImplementedError("Step 1 R2 — see docs/research/step1-spec.md §2.4")
+    spec = EDGE_REGISTRY.get(edge_type)
+    if spec is None:
+        raise InvariantError(
+            f"unknown edge_type {edge_type!r}; expected one of {sorted(EDGE_REGISTRY)}"
+        )
+    if spec.src != src_type or spec.dst != dst_type:
+        raise InvariantError(
+            f"edge {edge_type!r} expects {spec.src} -> {spec.dst}, "
+            f"got {src_type} -> {dst_type}"
+        )
 
 
 def list_edge_types() -> list[str]:
-    """Return all registered edge_type strings."""
-    raise NotImplementedError("Step 1 R2 — just return list(EDGE_REGISTRY.keys())")
+    """Return all registered edge_type strings (insertion order)."""
+    return list(EDGE_REGISTRY.keys())
+
+
+# ---------------------------------------------------------------------------
+# Edge value object — used by MCP tools / tests that operate on edges
+# without dropping into the sqlite3 connection.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Edge:
+    """In-memory representation of a typed edge between two pages.
+
+    Mirrors the ``links`` table (DDL §4) but addresses pages by slug instead
+    of numeric id so it can survive a re-ingest where ids may rotate.
+    """
+
+    src_slug: str
+    dst_slug: str
+    edge_type: str
+    properties: Optional[dict[str, Any]] = field(default_factory=dict)
+
+    def validate(self, src_type: EntityType, dst_type: EntityType) -> None:
+        """Convenience: run validate_edge for the (src_type, dst_type) pair."""
+        validate_edge(src_type, self.edge_type, dst_type)
+
+
+__all__ = [
+    "EdgeSpec",
+    "EDGE_REGISTRY",
+    "Edge",
+    "InvariantError",
+    "validate_edge",
+    "list_edge_types",
+]

@@ -1,72 +1,101 @@
-"""susr.llm.provider — LLMProvider Protocol.
+"""susr.llm.provider — LLMProvider Protocol。
 
-Per CLAUDE.md §8 decision 5+8: day-1 abstraction. All susr code that
-needs to call an LLM (synthesis, summarization, gap-analysis prose)
-goes through this Protocol — never directly against the Anthropic SDK.
+依 CLAUDE.md §8 decision 5/8 與 Q17:day-1 抽象 + vendor extras 折衷。
+所有需呼叫 LLM 的 susr code 透過此 Protocol;**不**直接 import
+anthropic SDK 進 domain logic。
 
-Spec §6.5 documents the risk that this layer ends up being a thin
-pass-through to Anthropic with kwargs leaking provider-specific
-features. R2 should keep Anthropic-specific config (tool use,
-extended thinking) in a typed sub-config object, not bare kwargs.
+Q17 折衷重點:
+    - 共通介面薄 (complete + stream),只承諾 cross-vendor 一定有的
+      message → text 與 tool-use 行為
+    - vendor-specific 高階特性 (prompt caching / extended thinking /
+      interleaved thinking) 透過 ``provider.extras`` 暴露,呼叫端如果
+      用了 extras 就**明確承認**綁定該 vendor,不假裝是 portable
+
+R2 不做 async (spec §6.5 原本標 async,但 MCP server 在 stdio 端
+本身是 sync handler,brain orchestrator 也以 sync 為主;先 sync,
+未來需要 streaming UI 再加 async wrapper)。
 """
 
 from __future__ import annotations
 
-from typing import AsyncIterator, Literal, Optional, Protocol, runtime_checkable
+from dataclasses import dataclass, field
+from typing import Any, Iterator, Literal, Optional, Protocol, runtime_checkable
 
-from pydantic import BaseModel
 
-
-class Message(BaseModel):
+@dataclass
+class LLMMessage:
     """Chat message envelope used across providers."""
 
     role: Literal["user", "assistant", "system"]
     content: str
 
 
-class ToolCall(BaseModel):
+@dataclass
+class LLMToolCall:
     """Provider-agnostic tool invocation request from the model."""
 
     name: str
     arguments: dict
+    # 部分 vendor (e.g. Anthropic) 會帶 tool_use_id 給 result 配對
+    id: Optional[str] = None
 
 
-class CompletionResult(BaseModel):
+@dataclass
+class LLMResponse:
     """Result envelope for a non-streaming completion call."""
 
-    text: str
-    tool_calls: list[ToolCall] = []
-    usage: dict = {}
+    content: str
+    tool_calls: Optional[list[dict]] = None
+    usage: Optional[dict] = None
+    # 給呼叫端 inspect 用 (e.g. "end_turn" vs "tool_use" vs "max_tokens")
+    stop_reason: Optional[str] = None
+    # 回傳的 raw model id,讓 logging / billing 對得回去
+    model: Optional[str] = None
+
+
+# Backward-compat aliases — R1 既有 pydantic 版本的 imports 不會壞
+Message = LLMMessage
+CompletionResult = LLMResponse
 
 
 @runtime_checkable
 class LLMProvider(Protocol):
-    """Async chat-completion provider."""
+    """Sync chat-completion provider (with optional streaming)。
+
+    Implementations MUST:
+        - 提供穩定的 ``name`` 屬性
+        - ``complete`` / ``stream`` 兩條路徑
+        - ``extras`` property 暴露 vendor-specific 子物件 (可為 None
+          if no extras supported)
+    """
+
+    name: str
+
+    def complete(
+        self,
+        messages: list[LLMMessage],
+        tools: Optional[list[dict]] = None,
+        system: Optional[str] = None,
+        max_tokens: int = 4096,
+    ) -> LLMResponse:
+        """Single-shot completion。回傳 text + 可選 tool_calls。"""
+        ...
+
+    def stream(
+        self,
+        messages: list[LLMMessage],
+        tools: Optional[list[dict]] = None,
+        system: Optional[str] = None,
+        max_tokens: int = 4096,
+    ) -> Iterator[str]:
+        """串流回傳 text chunks 給 UI 渲染。"""
+        ...
 
     @property
-    def name(self) -> str:
-        """Stable identifier, e.g. 'anthropic:claude-opus-4-7'."""
-        ...
+    def extras(self) -> Any:
+        """Vendor-specific 高階特性 (caching / extended thinking / etc.)。
 
-    async def complete(
-        self,
-        messages: list[Message],
-        *,
-        system: Optional[str] = None,
-        tools: Optional[list[dict]] = None,
-        max_tokens: int = 4096,
-        temperature: float = 0.2,
-    ) -> CompletionResult:
-        """Single-shot completion returning text (+ optional tool_calls)."""
-        ...
-
-    async def stream(
-        self,
-        messages: list[Message],
-        *,
-        system: Optional[str] = None,
-        max_tokens: int = 4096,
-        temperature: float = 0.2,
-    ) -> AsyncIterator[str]:
-        """Stream completion text chunks for UI rendering."""
+        呼叫端碰 extras 就明確承認綁定該 vendor;cross-vendor swap
+        時要重寫此處邏輯。
+        """
         ...
