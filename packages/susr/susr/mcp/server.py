@@ -61,6 +61,7 @@ def create_server() -> "FastMCP":
     from susr.mcp.tools import action as _action
     from susr.mcp.tools import iro as _iro
     from susr.mcp.tools import phase3 as _phase3
+    from susr.mcp.tools import phase6 as _phase6
     from susr.mcp.tools import phase7 as _phase7
     from susr.mcp.tools import workspace as _workspace
 
@@ -68,6 +69,7 @@ def create_server() -> "FastMCP":
     _iro.register(server)
     _action.register(server)
     _phase7.register(server)
+    _phase6.register(server)
     _workspace.register(server)
 
     return server
