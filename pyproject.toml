@@ -1,0 +1,21 @@
+[project]
+name = "m4ore-skill-susr-workspace"
+version = "0.0.0"
+description = "susr mono-repo workspace root (not published; uv workspace anchor only)"
+requires-python = ">=3.11"
+
+# This root project is NEVER published. It exists solely so that `uv` can treat
+# the repo as a workspace and resolve dependencies across `packages/*` members.
+# Source: https://docs.astral.sh/uv/concepts/projects/workspaces/
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv]
+# Workspace-wide dev tools. Production deps live in each member's pyproject.toml.
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pyyaml>=6.0",
+    "ruff>=0.6",
+]

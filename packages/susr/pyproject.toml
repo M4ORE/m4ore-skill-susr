@@ -1,0 +1,103 @@
+[project]
+name = "susr"
+version = "0.1.0"
+description = "susr — Sustainability/ESG report Co-pilot brain for consultants. Local-first, MCP-native."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "m4ore", email = "service@m4ore.com" }]
+keywords = ["esg", "sustainability", "gri", "issb", "mcp", "ai", "consultant"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Other Audience",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business",
+]
+
+dependencies = [
+    # MCP server — pip install "mcp[cli]" 取得 FastMCP + stdio_server
+    # Source: https://pypi.org/project/mcp/  (v1.27.x, requires Python >=3.10)
+    "mcp[cli]>=1.27,<2.0",
+
+    # SQLite vector extension — pre-v1, pin minor; see step1-spec §10.1
+    # Source: https://pypi.org/project/sqlite-vec/  (v0.1.9, 2026-03-31)
+    "sqlite-vec>=0.1.9,<0.2",
+
+    # Schema validation for entity frontmatter + MCP tool input
+    "pydantic>=2.6,<3.0",
+
+    # Markdown + frontmatter parsing
+    "python-frontmatter>=1.1",
+    "markdown-it-py>=3.0",
+
+    # Default LLM provider (Anthropic). LLMProvider abstraction (decision 5)
+    # lets us swap providers later without touching domain logic.
+    "anthropic>=0.40",
+
+    # YAML used both for shipped-KB metadata and per-client config
+    "pyyaml>=6.0",
+
+    # Jinja2 — Phase 3 materiality matrix / chapter scaffold rendering
+    "jinja2>=3.1",
+
+    # HTTP / CLI utilities
+    "httpx>=0.27",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+embeddings-openai = ["openai>=1.50"]
+embeddings-voyage = ["voyageai>=0.2"]
+embeddings-bge = [
+    "sentence-transformers>=3.0",
+    "torch>=2.2",
+]
+all = [
+    "openai>=1.50",
+    "voyageai>=0.2",
+    "sentence-transformers>=3.0",
+    "torch>=2.2",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+# Only console script: lets Claude Desktop spawn the MCP server.
+# CLI subcommands (init / doctor / kb-update) are exposed as MCP tools instead;
+# see CLAUDE.md §8 Decision 4.
+susr-mcp = "susr.mcp.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/m4ore/m4ore-skill-susr"
+Repository = "https://github.com/m4ore/m4ore-skill-susr"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["susr"]
+
+# Ship the bundled knowledge base + DDL + shared resources inside the wheel
+# so a fresh `pip install susr` is fully usable without git clone.
+[tool.hatch.build.targets.wheel.force-include]
+"susr/shared_kb" = "susr/shared_kb"
+"susr/brain/ddl" = "susr/brain/ddl"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
