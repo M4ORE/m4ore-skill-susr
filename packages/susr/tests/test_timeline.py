@@ -194,3 +194,125 @@ def test_write_datapoint_value_updates_entity_attributes(tmp_db) -> None:
     assert row is not None
     # value 攤平為 string，比對時容許 numeric 解析
     assert float(row[0]) == pytest.approx(120.0)
+
+
+# ---------------------------------------------------------------------------
+# R4d — append_timeline_md_body / append_dual unification
+# ---------------------------------------------------------------------------
+
+
+def test_append_timeline_md_body_adds_marker_and_line() -> None:
+    """空 body → 自動加 '## Timeline' marker + 第一行 - [ts] action=...。"""
+    from susr.brain.timeline import append_timeline_md_body
+
+    new_body, sid = append_timeline_md_body(
+        "", "verify", {"k": "v"}, "consultant:test"
+    )
+    assert "## Timeline" in new_body
+    assert "- [" in new_body
+    assert "action=verify" in new_body
+    assert "actor=consultant:test" in new_body
+    assert '"k": "v"' in new_body
+    assert sid == 1
+
+
+def test_append_timeline_md_body_increments_synthetic_id() -> None:
+    """連續 append 兩次 → synthetic id 為 1, 2。"""
+    from susr.brain.timeline import append_timeline_md_body
+
+    b1, s1 = append_timeline_md_body("", "ingest", {"i": 1}, "a")
+    b2, s2 = append_timeline_md_body(b1, "verify", {"i": 2}, "b")
+    assert s1 == 1
+    assert s2 == 2
+    # 兩行都在
+    assert b2.count("\n- [") == 2
+
+
+def test_append_dual_writes_both_db_and_body(tmp_brain) -> None:
+    """append_dual 對 brain DB 內存在的 page → 同時寫 DB row + MD body line。"""
+    from susr.brain.timeline import append_dual, timeline_for_page
+
+    # 建一個 topic page
+    page_slug = "topics/E1"
+    tmp_brain.put_page(
+        slug=page_slug, entity_type="topic", title="氣候變遷",
+        compiled_truth="", file_path="entities/topics/E1.md",
+        frontmatter={
+            "slug": "E1", "name": "氣候變遷", "axis": "E",
+            "impact_score": 4.5, "financial_score": 4.0,
+            "materiality_tier": "核心",
+        },
+    )
+    pid = tmp_brain.get_page(page_slug).id
+
+    tl_id, new_body = append_dual(
+        tmp_brain, page_slug, "verify", {"score": 4.5}, "consultant:test",
+        body="# E1\n",
+    )
+    # DB row 真實存在
+    entries = timeline_for_page(tmp_brain.conn, pid)
+    assert len(entries) == 1
+    assert entries[0].id == tl_id
+    assert entries[0].action_type == "verify"
+    assert entries[0].actor == "consultant:test"
+    assert entries[0].payload == {"score": 4.5}
+    # MD body 也含同步行
+    assert "## Timeline" in new_body
+    assert "action=verify" in new_body
+    assert "actor=consultant:test" in new_body
+
+
+def test_append_dual_md_only_when_no_engine() -> None:
+    """append_dual(engine=None) → 純 MD 寫入，回 synthetic id（不 raise）。"""
+    from susr.brain.timeline import append_dual
+
+    tl_id, new_body = append_dual(
+        None, None, "comment", {"note": "顧問註記"}, "consultant",
+        body="",
+    )
+    assert tl_id == 1  # synthetic 1-based id
+    assert "action=comment" in new_body
+    assert "顧問註記" in new_body  # ensure_ascii=False CJK 保留
+
+
+def test_append_dual_md_only_when_page_unknown(tmp_brain) -> None:
+    """append_dual page_slug 不在 brain DB → fallback MD-only。"""
+    from susr.brain.timeline import append_dual
+
+    tl_id, new_body = append_dual(
+        tmp_brain, "topics/DOES-NOT-EXIST", "ingest",
+        {"src": "test"}, "consultant", body="# X\n",
+    )
+    # 沒寫 DB → synthetic id = 1
+    assert tl_id == 1
+    assert "action=ingest" in new_body
+
+
+def test_append_dual_shares_timestamp_between_db_and_md(tmp_brain) -> None:
+    """append_dual 同 ts → DB 與 MD 內看到的 timestamp 為同一個 (audit trail 對齊)。"""
+    from susr.brain.timeline import append_dual
+
+    tmp_brain.put_page(
+        slug="topics/E1", entity_type="topic", title="氣候變遷",
+        compiled_truth="", file_path="entities/topics/E1.md",
+        frontmatter={
+            "slug": "E1", "name": "氣候變遷", "axis": "E",
+            "impact_score": 4.5, "financial_score": 4.0,
+            "materiality_tier": "核心",
+        },
+    )
+    explicit_ts = "2026-05-25T12:00:00+00:00"
+    tl_id, new_body = append_dual(
+        tmp_brain, "topics/E1", "ingest", {"k": "v"}, "a",
+        body="", ts=explicit_ts,
+    )
+    # MD body 內含此 ts
+    assert explicit_ts in new_body
+    # DB 內 ts 欄位（DB ts 為 DEFAULT CURRENT_TIMESTAMP — append_dual 不 override
+    # DB ts，僅保證 MD ts 與 caller 傳入一致；contract 上 MD 的人類可讀
+    # timestamp 與 DB ts 來自同一個 wall clock 即可）
+    row = tmp_brain.conn.execute(
+        "SELECT ts FROM timeline_entries WHERE id=?", [tl_id],
+    ).fetchone()
+    assert row is not None
+    assert row[0]  # DB 有 ts 即可

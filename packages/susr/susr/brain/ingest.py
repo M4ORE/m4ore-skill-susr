@@ -35,6 +35,7 @@ from typing import Any, Optional
 
 import yaml
 
+from susr.brain._slug import prefixed_slug, resolve_slug
 from susr.brain.edges import validate_edge
 from susr.brain.entities import ENTITY_SCHEMAS
 from susr.brain.pages import put_page
@@ -357,13 +358,17 @@ def ingest_markdown_file(
             f"(frontmatter has none and path has no recognised folder)"
         )
 
-    # 推斷 slug
-    actual_slug = slug or fm.get("slug") or path.stem
+    # 推斷 slug — 自動補成 prefixed form（R4c：brain 內部 source of truth）
+    raw_slug = slug or fm.get("slug") or path.stem
+    actual_slug = prefixed_slug(et, raw_slug)
 
     # entity_type 不入 frontmatter（不是 schema 欄位），先剝掉
     fm_for_norm = {k: v for k, v in fm.items() if k != "entity_type"}
     fm_clean = normalize_frontmatter(fm_for_norm, et)
-    fm_clean["slug"] = actual_slug  # 確保 slug 一致
+    # frontmatter.slug 保留 unqualified form（與 markdown 檔內所寫一致 → 顧問
+    # 不會看到 ``slug: topics/E1`` 這種雙重 prefix 的怪味道）。
+    # brain pages.slug 才是 prefixed canonical form（source of truth）。
+    fm_clean["slug"] = fm.get("slug") or path.stem
 
     title = fm_clean.get("name") or fm_clean.get("legal_name") or actual_slug
     page_id = put_page(
@@ -451,38 +456,30 @@ def _resolve_page_id_for_edge(
     *,
     tenant_id: Optional[str] = None,
 ) -> Optional[int]:
-    """找 slug 對應 page_id，兼容雙慣例（``X`` / ``<type>s/X`` / ``<type>/X``）。
+    """找 slug 對應 page_id，兼容雙慣例（``X`` / ``<plural>/X``）。
 
-    Returns page_id (int) or None 若找不到。R8+ R4c 議題未收斂前的兼容層。
+    R4c：委派給 ``_slug.resolve_slug`` 做 suffix-match + entity_type 消歧。
+    Ambiguous slug 場景在 auto-edge 上下文是「資料不完整 / 有同名 entity」，
+    silent skip 而非 raise（lenient 模式精神，匹配既有契約）。
     """
-    # 嘗試多種 slug 形式（brain slug 雙慣例 — R4c backlog）
-    plural = f"{expected_entity_type}s/"
-    singular = f"{expected_entity_type}/"
-    candidates: list[str] = [
-        slug,
-        plural + slug if not slug.startswith(plural) else slug,
-        singular + slug if not slug.startswith(singular) else slug,
-    ]
-    seen: set[str] = set()
-    for cand in candidates:
-        if cand in seen:
-            continue
-        seen.add(cand)
-        if tenant_id is None:
-            row = conn.execute(
-                "SELECT id FROM pages WHERE slug = ? AND tenant_id IS NULL "
-                "AND deleted_at IS NULL",
-                [cand],
-            ).fetchone()
-        else:
-            row = conn.execute(
-                "SELECT id FROM pages WHERE slug = ? AND tenant_id = ? "
-                "AND deleted_at IS NULL",
-                [cand, tenant_id],
-            ).fetchone()
-        if row is not None:
-            return int(row[0])
-    return None
+    from susr.brain._slug import AmbiguousSlugError
+
+    try:
+        resolved = resolve_slug(
+            conn, slug,
+            entity_type=expected_entity_type,
+            tenant_id=tenant_id,
+        )
+    except AmbiguousSlugError:
+        return None  # auto-edge lenient — ambiguous skip
+    if resolved is None:
+        return None
+    row = conn.execute(
+        "SELECT id FROM pages WHERE slug = ? AND tenant_id IS ? "
+        "AND deleted_at IS NULL",
+        [resolved, tenant_id],
+    ).fetchone()
+    return int(row[0]) if row is not None else None
 
 
 def _auto_create_edges_for_page(

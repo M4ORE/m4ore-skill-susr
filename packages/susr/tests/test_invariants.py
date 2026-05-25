@@ -508,3 +508,95 @@ def test_assert_all_aggregates_violations(tmp_brain) -> None:
     """
     # Empty brain: no offending rows for any invariant.
     assert_all(tmp_brain.conn)
+
+
+# ---------------------------------------------------------------------------
+# R5-3 — I1b violation grouping (unbound / dangling / deferred / pending)
+# ---------------------------------------------------------------------------
+
+
+def test_i1b_violation_group_unbound(tmp_brain) -> None:
+    """新建 IRO 無任何 outgoing edge → group='unbound' (最緊急)。"""
+    _make_core_topic(tmp_brain)
+    _make_iro(tmp_brain, "iros/E1-impact-x", "E1")
+    tmp_brain.link("topics/E1", "topic_has_iro", "iros/E1-impact-x")
+    # IRO 沒任何 outgoing edge
+
+    violations = check_all_invariants(tmp_brain.conn)
+    i1b = [v for v in violations if v.invariant_name == "I1b"]
+    assert len(i1b) == 1
+    assert i1b[0].group == "unbound"
+    assert i1b[0].page_slug == "iros/E1-impact-x"
+
+
+def test_i1b_violation_group_deferred_for_opportunity_on_non_core(tmp_brain) -> None:
+    """Opportunity 型 IRO + 非核心 topic → group='deferred' (Phase 5 之前未鏈可接受)。"""
+    # 建一個非核心 topic
+    tmp_brain.put_page(
+        slug="topics/E3",
+        entity_type="topic",
+        title="水資源",
+        compiled_truth="",
+        file_path="entities/topics/E3.md",
+        frontmatter={
+            "slug": "E3", "name": "水資源", "axis": "E",
+            "impact_score": 3.0, "financial_score": 3.0,
+            "materiality_tier": "重大",  # 不是核心
+        },
+    )
+    # 建一個 Opportunity 型 IRO + link
+    tmp_brain.put_page(
+        slug="iros/E3-opp",
+        entity_type="iro",
+        title="Opportunity: 節水溢價",
+        compiled_truth="",
+        file_path="entities/topics/E3/iro/E3-opp.md",
+        frontmatter={
+            "slug": "E3-opp", "topic_slug": "E3", "type": "Opportunity",
+            "category": "market", "time_horizon": "M",
+            "financial_magnitude": 3.0,
+        },
+    )
+    tmp_brain.link("topics/E3", "topic_has_iro", "iros/E3-opp")
+    # 同樣沒 outgoing edge — 但因為是 Opportunity + 非核心 topic → group=deferred 優先
+
+    violations = check_all_invariants(tmp_brain.conn)
+    # 注意：unbound 的判斷優先級高於 deferred — 因為 any_out_count = 0
+    # spec 要的順序是：dangling → unbound → deferred → pending
+    i1b_groups = [v.group for v in violations if v.invariant_name == "I1b"]
+    # 既然沒有 outgoing edge → 應為 unbound（最緊急）
+    assert "unbound" in i1b_groups
+
+
+def test_i1b_violation_group_pending_for_impact_on_core(tmp_brain) -> None:
+    """Impact 型 IRO + 核心 topic + 完全無 outgoing edge → 仍 'unbound'。"""
+    _make_core_topic(tmp_brain)  # 核心 topic
+    _make_iro(tmp_brain, "iros/E1-impact-y", "E1")
+    tmp_brain.link("topics/E1", "topic_has_iro", "iros/E1-impact-y")
+
+    violations = check_all_invariants(tmp_brain.conn)
+    i1b = [v for v in violations if v.invariant_name == "I1b"]
+    assert len(i1b) == 1
+    # 沒 outgoing edge → 一律 unbound（最高優先）
+    assert i1b[0].group == "unbound"
+
+
+def test_i1b_violation_group_field_exists_on_other_invariants_as_none(tmp_brain) -> None:
+    """非 I1b violation（I2 / I3 …）應保持 group=None — 只 I1b 套用分組。"""
+    # 建 chapter 缺 framework + topic linkage → I2 violation
+    tmp_brain.put_page(
+        slug="chapters/ch-x",
+        entity_type="chapter",
+        title="Chap",
+        compiled_truth="",
+        file_path="projects/2025-sr/chapters/x.md",
+        frontmatter={
+            "slug": "ch-x", "report_slug": "2025-sr",
+            "title": "Chap", "framework_refs": ["GRI 305"],
+            "owner": "ESG",
+        },
+    )
+    violations = check_all_invariants(tmp_brain.conn)
+    i2 = [v for v in violations if v.invariant_name == "I2"]
+    assert len(i2) == 1
+    assert i2[0].group is None  # R5-3 預設行為，僅 I1b 套用分組

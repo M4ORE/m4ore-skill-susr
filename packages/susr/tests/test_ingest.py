@@ -478,8 +478,9 @@ def test_chapter_framework_refs_auto_creates_chapter_conforms_to_edge(
         "AND p1.entity_type = 'chapter' "
         "AND p2.entity_type = 'framework'"
     ).fetchall()
-    assert ("tcfd-test", "gri-305") in [tuple(r) for r in rows], (
-        f"expected chapter_conforms_to edge tcfd-test→gri-305, got: {rows}"
+    # R4c：brain pages.slug 已統一為 prefixed form (<plural>/<id>)
+    assert ("chapters/tcfd-test", "frameworks/gri-305") in [tuple(r) for r in rows], (
+        f"expected chapter_conforms_to edge chapters/tcfd-test→frameworks/gri-305, got: {rows}"
     )
 
 
@@ -585,8 +586,9 @@ def test_auto_edge_succeeds_on_correct_direction(tmp_db, tmp_path: Path) -> None
         "JOIN pages p2 ON l.dst_page_id = p2.id "
         "WHERE l.edge_type = 'topic_has_iro'"
     ).fetchall()
-    assert ("e2-water", "iro-water-shortage") in [tuple(r) for r in rows], (
-        f"expected topic_has_iro e2-water→iro-water-shortage, got: {rows}"
+    # R4c：brain pages.slug 已統一為 prefixed form (<plural>/<id>)
+    assert ("topics/e2-water", "iros/iro-water-shortage") in [tuple(r) for r in rows], (
+        f"expected topic_has_iro topics/e2-water→iros/iro-water-shortage, got: {rows}"
     )
 
 

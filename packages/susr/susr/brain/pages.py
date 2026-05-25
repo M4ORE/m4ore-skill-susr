@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, Optional
 
+from susr.brain._slug import resolve_slug
 from susr.brain.entities import validate_frontmatter
 
 
@@ -256,13 +257,38 @@ def get_page(
     *,
     tenant_id: Optional[str] = None,
 ) -> Optional[Page]:
-    """Return the Page by (slug, tenant_id) or None if absent / soft-deleted."""
+    """Return the Page by ``(slug, tenant_id)`` or ``None``.
+
+    Slug 雙慣例兼容（R4c）：
+
+    * 優先精準匹配傳入的 ``slug``（含 ``/`` 的 prefixed form 走這條）
+    * 若無精準匹配且 ``slug`` 不含 ``/`` → 透過 :func:`susr.brain._slug.resolve_slug`
+      做後綴匹配（``%/<slug>``），讓顧問手打 ``"E1"`` 仍能找到 ``topics/E1``。
+    * 後綴匹配若命中多 entity_type 的 page → ``AmbiguousSlugError`` 直接 propagate。
+
+    Soft-deleted 行不可見（``deleted_at IS NULL`` 過濾）。
+    """
+    # Path A: literal match — preserve fast path for prefixed slug callers
     row = conn.execute(
         f"SELECT {_PAGE_COLS} FROM pages "
         f"WHERE slug = ? AND tenant_id IS ? AND deleted_at IS NULL",
         [slug, tenant_id],
     ).fetchone()
-    return _row_to_page(row)
+    if row is not None:
+        return _row_to_page(row)
+
+    # Path B: 兼容 unqualified slug — 只在 slug 不含 ``/`` 時嘗試 fallback。
+    # 含 ``/`` 但查不到代表 caller 已指定 prefixed slug 但 page 不存在 — return None。
+    if "/" not in slug.strip().strip("/"):
+        resolved = resolve_slug(conn, slug, tenant_id=tenant_id)
+        if resolved is not None:
+            row = conn.execute(
+                f"SELECT {_PAGE_COLS} FROM pages "
+                f"WHERE slug = ? AND tenant_id IS ? AND deleted_at IS NULL",
+                [resolved, tenant_id],
+            ).fetchone()
+            return _row_to_page(row)
+    return None
 
 
 def get_page_by_id(conn: sqlite3.Connection, page_id: int) -> Optional[Page]:

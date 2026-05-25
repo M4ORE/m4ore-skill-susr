@@ -45,12 +45,24 @@ class InvariantViolation:
             R4 新增 — 區分拆出的子 invariant。
         page_slug: 違反的 page slug。
         detail: 人讀說明。
+        group: R5-3 新增 — 細分嚴重度群組，便於 MCP UI 與顧問判斷工序。
+            目前僅 I1b 套用，其他 invariant 保持 None。可能值：
+                - ``"unbound"``      — IRO 無任何 outgoing edge（最緊急；新建未鏈）
+                - ``"dangling"``     — 有 iro_addressed_by edge 但 action page
+                    不存在（資料壞，需修補）
+                - ``"deferred"``     — Opportunity 型 IRO 且 topic tier 非核心，
+                    可以接受 Phase 5 之前未鏈
+                - ``"pending"``      — 其他正常待辦（多數為核心 topic 下 IRO
+                    尚未進入 Phase 5）
+            MCP `health_check` 暴露時可以依 group 過濾，顧問不必看完整 list 也
+            能優先解決 ``unbound`` / ``dangling``。
     """
 
     invariant: str  # 'I1' .. 'I5'（廣義 — backward compat 用）
     page_slug: str
     detail: str
     invariant_name: str = ""  # 'I1a' / 'I1b' / 'I2' / 'I3' / 'I4' / 'I5'
+    group: Optional[str] = None
 
     def __post_init__(self) -> None:
         # 若呼叫端只給 `invariant`（舊 R3 caller），自動鏡像到 invariant_name。
@@ -125,27 +137,91 @@ def assert_i1a_core_topic_has_iro(
 def _i1b_violations(
     conn: sqlite3.Connection, tenant_id: Optional[str] = None
 ) -> list[InvariantViolation]:
-    """I1b：IRO 必有 Action（Phase 5 後應 pass）。"""
+    """I1b：IRO 必有 Action（Phase 5 後應 pass）。
+
+    R5-3 分組（``InvariantViolation.group``）：
+
+        - ``"unbound"``  — IRO 完全無 outgoing edge（連 ``iro_addressed_by`` 都
+          沒插過）；最緊急的 case，可能是 ``link_topic_to_iro`` 完但顧問還沒
+          進到 Phase 5。
+        - ``"dangling"`` — 有 ``iro_addressed_by`` edge 但對端 action page
+          不存在（deleted_at 不是 NULL 或 entity_type 不是 'action'）。資料
+          一致性問題，需要修補。
+        - ``"deferred"`` — IRO type 為 ``"Opportunity"`` 且其 topic 的
+          ``materiality_tier`` 非 ``"核心"`` — Phase 5 之前未鏈可接受
+          (機會型 IRO 對非核心議題優先級較低)。
+        - ``"pending"``  — 其他（最常見的 happy-path 待辦：核心 topic 下的
+          impact/risk IRO 尚未在 Phase 5 補 action）。
+    """
+    # 抓 violations + IRO 對應的 type + 父 topic 的 materiality_tier，一次撈乾淨。
+    # LEFT JOIN 路徑：
+    #   v_i1b_iro_has_action → pages (iro) → entity_attributes(type)
+    #     → links (topic_has_iro 反向) → pages (topic) → entity_attributes(tier)
+    base_sql = """
+        SELECT
+            v.iro_slug,
+            ea_iro_type.value     AS iro_type,
+            ea_topic_tier.value   AS topic_tier,
+            (SELECT COUNT(*) FROM links l_any
+             WHERE l_any.src_page_id = p_iro.id) AS any_out_count,
+            (SELECT COUNT(*) FROM links l_addr
+             JOIN pages p_act ON p_act.id = l_addr.dst_page_id
+             WHERE l_addr.src_page_id = p_iro.id
+               AND l_addr.edge_type = 'iro_addressed_by'
+               AND (p_act.deleted_at IS NOT NULL
+                    OR p_act.entity_type != 'action')
+            ) AS dangling_count
+        FROM v_i1b_iro_has_action v
+        JOIN pages p_iro
+              ON p_iro.slug = v.iro_slug
+             AND p_iro.entity_type = 'iro'
+             AND p_iro.deleted_at IS NULL
+        LEFT JOIN entity_attributes ea_iro_type
+              ON ea_iro_type.page_id = p_iro.id
+             AND ea_iro_type.key = 'type'
+        LEFT JOIN links l_topic
+              ON l_topic.dst_page_id = p_iro.id
+             AND l_topic.edge_type = 'topic_has_iro'
+        LEFT JOIN pages p_topic
+              ON p_topic.id = l_topic.src_page_id
+             AND p_topic.entity_type = 'topic'
+        LEFT JOIN entity_attributes ea_topic_tier
+              ON ea_topic_tier.page_id = p_topic.id
+             AND ea_topic_tier.key = 'materiality_tier'
+        WHERE v.action_count = 0
+    """
     if tenant_id is None:
-        rows = conn.execute(
-            "SELECT iro_slug FROM v_i1b_iro_has_action "
-            "WHERE action_count = 0 ORDER BY iro_slug"
-        ).fetchall()
+        sql = base_sql + " ORDER BY v.iro_slug"
+        params: list[object] = []
     else:
-        rows = conn.execute(
-            "SELECT iro_slug FROM v_i1b_iro_has_action "
-            "WHERE action_count = 0 AND tenant_id IS ? ORDER BY iro_slug",
-            [tenant_id],
-        ).fetchall()
-    return [
-        InvariantViolation(
-            invariant="I1",
-            page_slug=str(r[0]),
-            detail="IRO has no Action (missing iro_addressed_by edge)",
-            invariant_name="I1b",
+        sql = base_sql + " AND v.tenant_id IS ? ORDER BY v.iro_slug"
+        params = [tenant_id]
+
+    rows = conn.execute(sql, params).fetchall()
+    out: list[InvariantViolation] = []
+    for slug, iro_type, topic_tier, any_out_count, dangling_count in rows:
+        if dangling_count and int(dangling_count) > 0:
+            group = "dangling"
+        elif not any_out_count or int(any_out_count) == 0:
+            group = "unbound"
+        elif (
+            iro_type
+            and str(iro_type).strip().lower() == "opportunity"
+            and (topic_tier is None or str(topic_tier).strip() != "核心")
+        ):
+            group = "deferred"
+        else:
+            group = "pending"
+        out.append(
+            InvariantViolation(
+                invariant="I1",
+                page_slug=str(slug),
+                detail="IRO has no Action (missing iro_addressed_by edge)",
+                invariant_name="I1b",
+                group=group,
+            )
         )
-        for r in rows
-    ]
+    return out
 
 
 def assert_i1b_iro_has_action(

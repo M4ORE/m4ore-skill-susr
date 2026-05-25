@@ -25,8 +25,10 @@ Restatement helper (`write_datapoint_value`):
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Literal, Optional
 
 ActionType = Literal[
@@ -38,6 +40,138 @@ ActionType = Literal[
     "iro_link",
     "gap_flag",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Markdown-body timeline helpers (R4d — collapse phase3._append_timeline_md
+# into a single canonical implementation under brain/).
+# ---------------------------------------------------------------------------
+
+_TIMELINE_MD_MARKER = "## Timeline"
+_TIMELINE_MD_LINE_RE = re.compile(r"^- \[", re.MULTILINE)
+
+
+def _now_iso() -> str:
+    """Current UTC timestamp as ISO-8601 seconds string (shared MD + DB)."""
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def append_timeline_md_body(
+    body: str,
+    action: str,
+    payload: dict[str, Any],
+    actor: str,
+    *,
+    ts: Optional[str] = None,
+) -> tuple[str, int]:
+    """Append one ``- [ts] action=... actor=... payload={..}\\n`` line to a
+    page's markdown body under a ``## Timeline`` section.
+
+    Args:
+        body: existing markdown body (may or may not already contain the
+            ``## Timeline`` marker; will be added if missing).
+        action: short action token (e.g. ``"verify"``, ``"ingest"``,
+            ``"iro_link"``); free-text, no enum enforcement here so callers
+            can use both ActionType values and finer-grained labels.
+        payload: dict, JSON-serialised inline with ``ensure_ascii=False`` so
+            CJK stays human-readable in diffs.
+        actor: who triggered the entry (consultant / agent id / "consultant:王").
+        ts: optional ISO timestamp; defaults to ``_now_iso()``.  Pass an
+            explicit value when ``append_dual`` wants MD and DB rows to
+            share a timestamp.
+
+    Returns:
+        ``(new_body, synthetic_id)`` where synthetic_id is 1-based count of
+        timeline lines in the resulting body — useful as a stable id when
+        no brain DB row exists (e.g. phase3 tools in MD-only mode).
+    """
+    if ts is None:
+        ts = _now_iso()
+    body = body or ""
+    if _TIMELINE_MD_MARKER not in body:
+        body = body.rstrip() + f"\n\n---\n\n{_TIMELINE_MD_MARKER}\n\n"
+    new_id = len(_TIMELINE_MD_LINE_RE.findall(body)) + 1
+    line = (
+        f"- [{ts}] action={action} actor={actor} payload="
+        f"{json.dumps(payload, ensure_ascii=False, sort_keys=True)}\n"
+    )
+    return body + line, new_id
+
+
+def append_dual(
+    engine: Any,
+    page_slug: Optional[str],
+    action: str,
+    payload: dict[str, Any],
+    actor: str,
+    *,
+    body: str = "",
+    source_ref: Optional[str] = None,
+    confidence: Optional[float] = None,
+    ts: Optional[str] = None,
+) -> tuple[int, str]:
+    """Unified timeline writer — DB ``timeline_entries`` + markdown body.
+
+    R4d 收斂 (CLAUDE.md §8 decisions log)：原本兩處（``iro.py`` /
+    ``action.py`` 直寫 brain DB；``phase3._append_timeline_md`` 只寫 markdown
+    body）各自漂移欄位名 / 順序 / actor 寫法。本 helper 確保：
+
+    1. 同一 ``ts`` 同時寫入 DB row 與 MD body line（顧問 ``git diff`` 與
+       ``SELECT ... FROM timeline_entries`` 看到同樣 payload + actor）。
+    2. payload 在 DB（JSON column）與 MD body（inline JSON）為相同字串
+       (``json.dumps(payload, ensure_ascii=False, sort_keys=True)``)，方便
+       audit trail 跨來源比對。
+    3. 容錯：若 ``engine`` 為 ``None`` 或 ``page_slug`` 未在 brain DB（phase3
+       tools 還沒 ingest 該 page 時的 MD-only fallback），DB 寫入被跳過，
+       回傳 ``(synthetic_id, new_body)`` — synthetic_id = MD body 內 timeline
+       line 的 1-based 計數，與舊 ``_append_timeline_md`` 行為相容。
+
+    Args:
+        engine: ``BrainEngine`` instance（要有 ``.conn`` 與 ``.get_page``）
+            或 None（MD-only mode）。
+        page_slug: brain DB 內 page slug（如 ``"iros/E1-impact-…"``）；None →
+            略過 DB 寫入。
+        action: action token（``"ingest"`` / ``"verify"`` / ``"iro_link"``…）；
+            DB 端會被 CHECK 約束（見 ActionType 與 DDL §5）；MD 端任意字串。
+        payload: 寫入 DB 與 MD 同一份字典。
+        actor: ``"consultant"`` / ``"consultant:王"`` / agent id；同寫兩端。
+        body: 既有的 markdown body 字串；若 ``"##Timeline"`` 標頭不存在會自動加。
+        source_ref: 可選 source_ref（檔案路徑 / URL / ERP record id）。
+        confidence: 可選 confidence (0..1)；MD 端不顯示，只進 DB。
+        ts: 可選 ISO timestamp；預設 ``_now_iso()``，兩端共用。
+
+    Returns:
+        ``(id_or_synthetic, new_body)``：DB 寫成功時為 ``timeline_entries.id``，
+        否則為 synthetic 1-based 計數。
+    """
+    if ts is None:
+        ts = _now_iso()
+    # MD body first — always succeeds (pure string op).
+    new_body, synthetic_id = append_timeline_md_body(
+        body, action, payload, actor, ts=ts
+    )
+    # DB write — best-effort; skipped silently if engine missing / slug unknown.
+    db_id: Optional[int] = None
+    if engine is not None and page_slug:
+        try:
+            page = engine.get_page(page_slug)
+        except Exception:  # pragma: no cover — defensive
+            page = None
+        if page is not None:
+            try:
+                db_id = write_entry(
+                    engine.conn,
+                    page_id=int(page.id),
+                    action_type=action,  # type: ignore[arg-type]
+                    actor=actor,
+                    source_ref=source_ref,
+                    confidence=confidence,
+                    payload=payload,
+                )
+                engine.conn.commit()
+            except sqlite3.Error:  # pragma: no cover — defensive
+                db_id = None
+    return (db_id if db_id is not None else synthetic_id), new_body
 
 
 @dataclass
