@@ -79,8 +79,32 @@ susr v0.1 是**本地優先（local-first）+ MCP-native + Markdown source of tr
 
 ### 快速開始
 
+> **目前狀態（v0.1 alpha）**：尚未上架 PyPI，請從 GitHub 安裝。Design partner 顧問請走方法 1（升級最方便）。
+
+**方法 1：editable install（推薦給 design partner，可隨 git pull 升級）**
+
 ```bash
-pip install susr
+git clone https://github.com/M4ORE/m4ore-skill-susr
+cd m4ore-skill-susr/packages/susr
+pip install -e .
+```
+
+**方法 2：pip from git（不用 clone）**
+
+```bash
+pip install "git+https://github.com/M4ORE/m4ore-skill-susr.git#subdirectory=packages/susr"
+```
+
+**方法 3：uv tool install（隔離 venv，最乾淨）**
+
+```bash
+uv tool install "git+https://github.com/M4ORE/m4ore-skill-susr.git#subdirectory=packages/susr"
+```
+
+安裝完驗證：
+
+```bash
+susr-mcp --help    # 應該看到 entry point 跑起來
 ```
 
 設定 Claude Desktop：在 `claude_desktop_config.json` 加入
@@ -88,12 +112,19 @@ pip install susr
 ```json
 {
   "mcpServers": {
-    "susr": { "command": "susr-mcp" }
+    "susr": {
+      "command": "susr-mcp",
+      "env": {
+        "SUSR_WORKSPACE_ROOT": "C:\\Users\\<your-name>\\work\\susr-workspace"
+      }
+    }
   }
 }
 ```
 
-config 路徑：macOS 在 `~/Library/Application Support/Claude/`，Windows 在 `%APPDATA%\Claude\`。
+- **config 路徑**：macOS `~/Library/Application Support/Claude/`，Windows `%APPDATA%\Claude\`
+- **`SUSR_WORKSPACE_ROOT`**：所有 client workspace 的 root 目錄（susr 會在裡面建 `<client-slug>/` 子資料夾）。Mac/Linux 用 `/Users/<name>/work/susr-workspace`
+- PyPI 上架後將簡化為 `pip install susr`
 
 重啟 Claude Desktop，開新對話：
 
@@ -241,8 +272,32 @@ See the three canonical docs: [`docs/defeinition.md`](docs/defeinition.md) / [`d
 
 ### Quick Start
 
+> **Current status (v0.1 alpha)**: Not yet on PyPI. Install from GitHub. Design-partner consultants should use Method 1 (easiest to upgrade).
+
+**Method 1: editable install (recommended for design partners, upgrade via `git pull`)**
+
 ```bash
-pip install susr
+git clone https://github.com/M4ORE/m4ore-skill-susr
+cd m4ore-skill-susr/packages/susr
+pip install -e .
+```
+
+**Method 2: pip from git (no clone needed)**
+
+```bash
+pip install "git+https://github.com/M4ORE/m4ore-skill-susr.git#subdirectory=packages/susr"
+```
+
+**Method 3: uv tool install (isolated venv, cleanest)**
+
+```bash
+uv tool install "git+https://github.com/M4ORE/m4ore-skill-susr.git#subdirectory=packages/susr"
+```
+
+Verify:
+
+```bash
+susr-mcp --help
 ```
 
 Configure Claude Desktop's `claude_desktop_config.json`:
@@ -250,10 +305,19 @@ Configure Claude Desktop's `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "susr": { "command": "susr-mcp" }
+    "susr": {
+      "command": "susr-mcp",
+      "env": {
+        "SUSR_WORKSPACE_ROOT": "/Users/<your-name>/work/susr-workspace"
+      }
+    }
   }
 }
 ```
+
+- Config path: macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`
+- `SUSR_WORKSPACE_ROOT` is the parent dir for all client workspaces; susr creates `<client-slug>/` subdirs there
+- After PyPI release this collapses to `pip install susr`
 
 Restart Claude Desktop. In a new chat:
 

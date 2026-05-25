@@ -77,8 +77,8 @@ dev = [
 susr-mcp = "susr.mcp.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/m4ore/m4ore-skill-susr"
-Repository = "https://github.com/m4ore/m4ore-skill-susr"
+Homepage = "https://github.com/M4ORE/m4ore-skill-susr"
+Repository = "https://github.com/M4ORE/m4ore-skill-susr"
 
 [build-system]
 requires = ["hatchling"]
