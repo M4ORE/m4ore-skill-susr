@@ -4,10 +4,9 @@ entity_type: chapter
 report_slug: 2025-sustainability-report
 title: 顧客隱私與資訊安全（S7 章節 — 2025）
 framework_refs:
-  - GRI 418
-  - ISO 27001
-  - 個資法
-  - PCI-DSS
+  - gri-418
+  - iso-27001
+  - pci-dss
 owner: IT 部 / 法務 / 永續發展辦公室
 discloses_topics:
   - S7-customer-privacy

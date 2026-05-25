@@ -501,7 +501,7 @@ projects_2025_research_log:
 
 projects_2025_chapter_tcfd:
   file: projects/2025-sustainability-report/chapters/tcfd-2025.md
-  description: 完整 TCFD 章節（從 phase5-tcfd-sample 直搬）；必須含 4 構面 + 情境分析 + 7 段公式 + 未達標誠實揭露
+  description: 完整 TCFD 章節（從 phase5-tcfd-sample 直搬）；必須含 4 構面 + 情境分析 + 7 段公式 + 未達標誠實揭露；R8-3 後 framework_refs 改 slug list
   must_contain:
     - "TCFD"
     - "IRO"
@@ -519,6 +519,8 @@ projects_2025_chapter_tcfd:
     - "基線"
     - "未達標"
     - "SBTi"
+    - "tcfd"          # R8-3: framework_refs slug
+    - "gri-305"       # R8-3: framework_refs slug
   must_contain_any:
     - "ISSB"
     - "IFRS S2"
@@ -647,7 +649,7 @@ entities_iros_s12_indigenous_culture:
 
 projects_2025_chapter_food_safety:
   file: projects/2025-sustainability-report/chapters/food-safety-2025.md
-  description: S6 食安章節 — 行業特化（HACCP / 過敏原 / 食材里程 / 山區冷鏈）
+  description: S6 食安章節 — 行業特化（HACCP / 過敏原 / 食材里程 / 山區冷鏈）；R8-3 後 framework_refs 改 slug list
   must_contain:
     - "entity_type: chapter"
     - "S6-food-safety"
@@ -657,6 +659,8 @@ projects_2025_chapter_food_safety:
     - "治理"
     - "目標"
     - "KPI"
+    - "gri-416"     # R8-3: framework_refs slug
+    - "haccp"       # R8-3: framework_refs slug
   must_contain_any:
     - "HACCP"
     - "過敏原"
@@ -665,7 +669,7 @@ projects_2025_chapter_food_safety:
 
 projects_2025_chapter_customer_privacy:
   file: projects/2025-sustainability-report/chapters/customer-privacy-2025.md
-  description: S7 + G4 顧客隱私章節 — 旅館業 PII 特化（會員 / 訂房 / 監控影像）
+  description: S7 + G4 顧客隱私章節 — 旅館業 PII 特化（會員 / 訂房 / 監控影像）；R8-3 後 framework_refs 改 slug list
   must_contain:
     - "entity_type: chapter"
     - "S7-customer-privacy"
@@ -675,6 +679,8 @@ projects_2025_chapter_customer_privacy:
     - "治理"
     - "目標"
     - "KPI"
+    - "gri-418"     # R8-3: framework_refs slug
+    - "iso-27001"   # R8-3: framework_refs slug
   must_contain_any:
     - "ISO 27001"
     - "PII"
@@ -683,7 +689,7 @@ projects_2025_chapter_customer_privacy:
 
 projects_2025_chapter_local_indigenous:
   file: projects/2025-sustainability-report/chapters/local-indigenous-2025.md
-  description: S10 + S12 在地共融與文化保存章節 — 旅館業特化（明池泰雅族 / 在地僱用）
+  description: S10 + S12 在地共融與文化保存章節 — 旅館業特化（明池泰雅族 / 在地僱用）；R8-3 後 framework_refs 改 slug list
   must_contain:
     - "entity_type: chapter"
     - "S12-indigenous-culture"
@@ -693,6 +699,8 @@ projects_2025_chapter_local_indigenous:
     - "治理"
     - "目標"
     - "KPI"
+    - "gri-411"     # R8-3: framework_refs slug
+    - "gri-413"     # R8-3: framework_refs slug
   must_contain_any:
     - "明池"
     - "泰雅"
@@ -739,4 +747,77 @@ entities_actions_s12_co_create:
     - "entity_type: action"
     - "S12-indigenous-culture-impact-preservation"
     - "泰雅"
+  min_lines: 15
+
+# ---------------------------------------------------------------------------
+# R8-3 補：entities/frameworks/ × 14（chapter_conforms_to edge target；I2 invariant）
+# ---------------------------------------------------------------------------
+
+entities_frameworks_gri_305:
+  file: entities/frameworks/gri-305.md
+  description: GRI 305 Emissions — TCFD 章節用排放盤查 framework
+  must_contain:
+    - "slug: gri-305"
+    - "entity_type: framework"
+    - "GRI"
+    - "305"
+    - "Emissions"
+    - "Scope 1"
+    - "Scope 2"
+    - "Scope 3"
+  min_lines: 15
+
+entities_frameworks_gri_416:
+  file: entities/frameworks/gri-416.md
+  description: GRI 416 Customer Health and Safety — 食安章節用 framework
+  must_contain:
+    - "slug: gri-416"
+    - "entity_type: framework"
+    - "GRI"
+    - "416"
+    - "Customer Health"
+  min_lines: 15
+
+entities_frameworks_gri_418:
+  file: entities/frameworks/gri-418.md
+  description: GRI 418 Customer Privacy — 隱私章節用 framework
+  must_contain:
+    - "slug: gri-418"
+    - "entity_type: framework"
+    - "GRI"
+    - "418"
+    - "Customer Privacy"
+  min_lines: 15
+
+entities_frameworks_tcfd:
+  file: entities/frameworks/tcfd.md
+  description: TCFD 4 構面氣候揭露 framework — 11 建議揭露逐項對應
+  must_contain:
+    - "slug: tcfd"
+    - "entity_type: framework"
+    - "TCFD"
+    - "Governance"
+    - "Strategy"
+    - "Risk Management"
+    - "Metrics"
+  min_lines: 15
+
+entities_frameworks_issb_s2:
+  file: entities/frameworks/issb-s2.md
+  description: ISSB IFRS S2 氣候揭露 framework — 2028 台灣強制
+  must_contain:
+    - "slug: issb-s2"
+    - "entity_type: framework"
+    - "IFRS S2"
+    - "Climate"
+  min_lines: 15
+
+entities_frameworks_sasb_hl:
+  file: entities/frameworks/sasb-hl.md
+  description: SASB Hotels & Lodging 行業 framework — 統括所有 SV-HL-*  metric
+  must_contain:
+    - "slug: sasb-hl"
+    - "entity_type: framework"
+    - "SASB"
+    - "SV-HL"
   min_lines: 15

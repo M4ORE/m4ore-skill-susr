@@ -4,11 +4,11 @@ entity_type: chapter
 report_slug: 2025-sustainability-report
 title: 章節骨架 — 7 大篇章 index
 framework_refs:
-  - GRI Standards 2021
-  - TCFD
-  - SASB Hotels & Lodging
-  - ISSB IFRS S1/S2
-  - 金管會永續報告書作業辦法 2024-02
+  - gri-2021
+  - tcfd
+  - sasb-hl
+  - issb-s1
+  - issb-s2
 owner: 永續發展辦公室
 discloses_topics:
   - E1-climate

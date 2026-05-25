@@ -4,10 +4,9 @@ entity_type: chapter
 report_slug: 2025-sustainability-report
 title: 食品安全與品質（S6 章節 — 2025）
 framework_refs:
-  - GRI 416
-  - SASB SV-HL-260a.1
-  - 食安法
-  - HACCP
+  - gri-416
+  - sasb-hl
+  - haccp
 owner: 餐飲部 / 永續發展辦公室
 discloses_topics:
   - S6-food-safety

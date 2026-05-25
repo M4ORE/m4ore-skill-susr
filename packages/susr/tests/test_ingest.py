@@ -416,3 +416,111 @@ def test_ingest_lealea_targets_now_succeeds(tmp_db) -> None:
         f"expected ≥3 lealea targets ingested, got {len(results)}: "
         f"{list(results.keys())}"
     )
+
+
+# ---------------------------------------------------------------------------
+# R8-3: Chapter.framework_refs → chapter_conforms_to forward rule
+# ---------------------------------------------------------------------------
+
+
+def test_chapter_framework_refs_auto_creates_chapter_conforms_to_edge(
+    tmp_db, tmp_path: Path,
+) -> None:
+    """ingest chapter (含 framework_refs) + 對應 framework entity →
+    自動建出 chapter_conforms_to edge（forward direction: chapter → framework）。
+
+    這是 R8-3 加的 forward rule，用於修 R6 walkthrough §7 R8-3 揭露 — Chapter
+    frontmatter 寫的 framework_refs slug list 沒自動建 chapter_conforms_to edge，
+    導致 I2 invariant violation。
+    """
+    # 1. 建一個 framework entity
+    fw_dir = tmp_path / "entities" / "frameworks"
+    fw_dir.mkdir(parents=True)
+    (fw_dir / "gri-305.md").write_text(
+        "---\n"
+        "slug: gri-305\n"
+        "entity_type: framework\n"
+        'version: "2016"\n'
+        "disclosures:\n"
+        "  - 305-1\n"
+        "  - 305-2\n"
+        "is_mandatory_in:\n"
+        "  - TW\n"
+        "---\n\n# GRI 305\n",
+        encoding="utf-8",
+    )
+
+    # 2. 建一個 chapter，framework_refs 指向上面 framework
+    ch_dir = tmp_path / "projects" / "p1" / "chapters"
+    ch_dir.mkdir(parents=True)
+    (ch_dir / "tcfd-test.md").write_text(
+        "---\n"
+        "slug: tcfd-test\n"
+        "entity_type: chapter\n"
+        "report_slug: r1\n"
+        "title: TCFD Test Chapter\n"
+        "framework_refs:\n"
+        "  - gri-305\n"
+        "owner: ESG Office\n"
+        "---\n\n# TCFD Test\n",
+        encoding="utf-8",
+    )
+
+    # 3. ingest 整個 tmp_path → framework 先 ingest，chapter 後 ingest（兩階段 pass）
+    ingest_directory(tmp_db, tmp_path, strict=False)
+
+    # 4. 驗證 chapter_conforms_to edge 存在（chapter 為 src，framework 為 dst）
+    rows = tmp_db.execute(
+        "SELECT p1.slug, p2.slug FROM links l "
+        "JOIN pages p1 ON l.src_page_id = p1.id "
+        "JOIN pages p2 ON l.dst_page_id = p2.id "
+        "WHERE l.edge_type = 'chapter_conforms_to' "
+        "AND p1.entity_type = 'chapter' "
+        "AND p2.entity_type = 'framework'"
+    ).fetchall()
+    assert ("tcfd-test", "gri-305") in [tuple(r) for r in rows], (
+        f"expected chapter_conforms_to edge tcfd-test→gri-305, got: {rows}"
+    )
+
+
+def test_lealea_i2_invariant_pass_after_frameworks(tmp_db) -> None:
+    """端到端：ingest 全 lealea entities/ + chapters/ 後 I2 = 0 violations。
+
+    這是 R8-3 的 regression test — 確保未來修改不會讓 I2 再回到 5 violations。
+    需要：
+      - 14 個 framework entity 存在於 entities/frameworks/
+      - 5 個 chapter 的 framework_refs 是 slug list（lower-case + hyphen）
+      - ingest.py forward rule ("chapter", "framework_refs") wired
+      - ingest.py forward rule ("chapter", "discloses_topics") wired
+    """
+    from susr.brain.invariants import check_all_invariants
+
+    repo_root = Path(__file__).resolve().parents[3]
+    lealea = repo_root / "examples" / "lealea-5364"
+    ingest_directory(tmp_db, lealea / "entities", strict=False)
+    ingest_directory(
+        tmp_db,
+        lealea / "projects" / "2025-sustainability-report" / "chapters",
+        strict=False,
+    )
+
+    viols = check_all_invariants(tmp_db)
+    i2_viols = [v for v in viols if getattr(v, "invariant_name", "") == "I2"]
+    assert i2_viols == [], (
+        f"expected I2 to pass after R8-3 framework wiring, got "
+        f"{len(i2_viols)} violations: "
+        f"{[getattr(v, 'detail', str(v)) for v in i2_viols]}"
+    )
+
+    # 同時驗證 chapter_conforms_to edge 真的有建出來（≥1 per chapter）
+    chapter_count = tmp_db.execute(
+        "SELECT COUNT(*) FROM pages WHERE entity_type = 'chapter' "
+        "AND deleted_at IS NULL"
+    ).fetchone()[0]
+    edge_count = tmp_db.execute(
+        "SELECT COUNT(*) FROM links WHERE edge_type = 'chapter_conforms_to'"
+    ).fetchone()[0]
+    assert chapter_count == 5, f"expected 5 chapters, got {chapter_count}"
+    assert edge_count >= 5, (
+        f"expected ≥5 chapter_conforms_to edges (1 per chapter), got {edge_count}"
+    )

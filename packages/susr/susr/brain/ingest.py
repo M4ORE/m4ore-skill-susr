@@ -421,8 +421,6 @@ _AUTO_EDGE_RULES: dict[tuple[str, str], _AutoEdgeRule] = {
     ("engagement",  "stakeholder_slug"): ("stakeholder_engaged_via", "stakeholder", False),
     # Engagement ingest → engagement_raised_topic per topic in topic_slugs (list)
     ("engagement",  "topic_slugs"):      ("engagement_raised_topic", "topic",      True),
-    # Chapter ingest → discloses_topic for each topic in discloses_topics (list)
-    ("chapter",     "discloses_topics"): ("discloses_topic",        "topic",       True),
     # Target ingest → target_measures (target → kpi); kpi_slug from frontmatter,
     # but EdgeSpec is target→kpi so this is FORWARD. Special-cased below.
     # Action ingest → action_tracks (action → target); not yet wired (Phase 5 範疇)
@@ -433,6 +431,15 @@ _AutoEdgeForwardRule = tuple[str, str, bool]  # (edge_type, dst_entity_type, is_
 _AUTO_EDGE_FORWARD_RULES: dict[tuple[str, str], _AutoEdgeForwardRule] = {
     # Target.kpi_slug → target_measures (target → kpi)
     ("target", "kpi_slug"): ("target_measures", "kpi", False),
+    # R8-3: Chapter.framework_refs → chapter_conforms_to (chapter → framework, list)
+    # 修 R6 walkthrough §7 R8-3 揭露 — Chapter frontmatter 寫 framework_refs slug list
+    # 卻沒自動建 chapter_conforms_to edge，導致 I2 invariant 5 violations。
+    ("chapter", "framework_refs"): ("chapter_conforms_to", "framework", True),
+    # R8-3 順帶修正：Chapter.discloses_topics → discloses_topic (chapter → topic, list)
+    # 原 R8-1 把這條放在 reverse rules（external_is_src）建出反向 edge（topic→chapter），
+    # 繞過 validate_edge 後 silently 寫進 links 表，導致 v_chapter_completeness 抓不到
+    # topic_count（view 只認 chapter 為 src 的 edges）。修為 forward，方向與 EdgeSpec 一致。
+    ("chapter", "discloses_topics"): ("discloses_topic", "topic", True),
 }
 
 

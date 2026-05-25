@@ -4,10 +4,9 @@ entity_type: chapter
 report_slug: 2025-sustainability-report
 title: 在地共融與文化保存（S12 章節 — 2025）
 framework_refs:
-  - GRI 411
-  - GRI 413
-  - SASB SV-HL-310a.1
-  - 原住民族基本法
+  - gri-411
+  - gri-413
+  - sasb-hl
 owner: 永續發展辦公室 / 在地共融專案小組
 discloses_topics:
   - S10-local-employment
