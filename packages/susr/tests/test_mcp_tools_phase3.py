@@ -412,3 +412,166 @@ def test_lealea_3_vs_9_core_after_resolve(tmp_client_workspace) -> None:
     )
     # 對應 6 個 explicit override warning
     assert len(warnings) == 6, f"expected 6 tier overrides warned, got {len(warnings)}"
+
+
+# ---------------------------------------------------------------------------
+# R4a — score_topic_dual_axis 走 resolve_materiality_tier 而非直接覆寫
+# （walkthroughs/lealea-5364-phase3-r3.md §5.1 P1 修補）
+# ---------------------------------------------------------------------------
+
+
+def test_score_topic_preserves_explicit_tier_with_warning(tmp_client_workspace) -> None:
+    """顧問先 explicit `materiality_tier='核心'`，後 scoring 低分不該被自動結果吞掉。
+
+    R4a 場景：先 put_page Topic E1 frontmatter `materiality_tier='核心'`，
+    再 score_topic_dual_axis 給 impact=2 financial=2。score path 必須走
+    resolve_materiality_tier → honor explicit "核心" 並 emit warning，**不**
+    把 frontmatter overwrite 成 auto-suggested 的「邊界」。
+    """
+    ws = _ws_path(tmp_client_workspace)
+    _write_topic(
+        ws,
+        "E1",
+        {"name": "氣候變遷", "axis": "E", "materiality_tier": "核心"},
+    )
+    result = score_topic_dual_axis(
+        client_slug="test-client",
+        topic_slug="E1",
+        impact=ImpactScores(severity=2, scope=2, irreversibility=2, likelihood=2),
+        financial=FinancialScores(magnitude=2, time_horizon="S", probability=2),
+        actor="consultant:test",
+    )
+
+    # 1) 顧問 explicit 仍為核心（不被吞）
+    assert result.materiality_tier == "核心"
+    # 2) Response 含 warning，指出與 auto 不一致
+    assert result.tier_resolution_warning is not None
+    assert "kept explicit" in result.tier_resolution_warning
+    assert "auto-suggested" in result.tier_resolution_warning
+
+    # 3) frontmatter 寫回的 materiality_tier 仍為核心
+    from susr.mcp.tools.phase3 import _read_md
+
+    fm, body = _read_md(ws / "entities" / "topics" / "E1.md")
+    assert fm["materiality_tier"] == "核心"
+
+    # 4) timeline body 含 warning detail（額外 verify 條目，supports audit trail）
+    #    note: warning 在 JSON payload 中字串字面會 escape 引號，故用核心 substring 偵測
+    assert "kept explicit" in body
+    assert "auto_tier" in body  # 額外 audit 條目的 payload key
+    assert "resolved_tier" in body
+    # 應有兩個 timeline entry（一個 scoring 主條目 + 一個 warning audit 條目）
+    import re as _re
+
+    entries = _re.findall(r"^- \[", body, _re.MULTILINE)
+    assert len(entries) == 2, f"expected 2 timeline entries (score + warning), got {len(entries)}"
+
+
+def test_score_topic_no_warning_when_aligned(tmp_client_workspace) -> None:
+    """fm 無 explicit tier 且 score 對齊 auto → 不該 emit warning，timeline 無 warning 條目。"""
+    ws = _ws_path(tmp_client_workspace)
+    # 故意不寫 materiality_tier
+    _write_topic(ws, "E1", {"name": "氣候變遷", "axis": "E"})
+
+    result = score_topic_dual_axis(
+        client_slug="test-client",
+        topic_slug="E1",
+        impact=ImpactScores(severity=5, scope=5, irreversibility=5, likelihood=5),
+        financial=FinancialScores(magnitude=5, time_horizon="L", probability=5),
+        actor="consultant:test",
+    )
+
+    assert result.materiality_tier == "核心"
+    assert result.tier_resolution_warning is None
+
+    # frontmatter 寫入核心
+    from susr.mcp.tools.phase3 import _read_md
+
+    fm, body = _read_md(ws / "entities" / "topics" / "E1.md")
+    assert fm["materiality_tier"] == "核心"
+
+    # timeline 僅有單一 scoring 條目，無 warning audit
+    import re as _re
+
+    entries = _re.findall(r"^- \[", body, _re.MULTILINE)
+    assert len(entries) == 1, f"expected exactly 1 timeline entry (no warning), got {len(entries)}"
+    assert "kept explicit" not in body
+
+
+def test_score_topic_then_matrix_shows_tier_overrides(tmp_client_workspace) -> None:
+    """先 score 6 個 explicit-vs-auto 衝突的 topic，再生成矩陣 → tier_overrides=6。
+
+    這是 R3-verify §5.1 揭露 bug 的回歸測試：在原 R4a bug 下，score path 直接
+    把顧問 explicit 覆寫成 auto，導致後續 matrix 看不到任何衝突；現在 score path
+    走 resolve_materiality_tier，6 個衝突會被完整保留並在 matrix 顯示。
+
+    對照 lealea SP1-004 § scoring：6 個顧問 explicit "核心" 但 auto 算「重大」
+    的 topic（G2/G3/S1/S4/S7/S8 模式）。
+    """
+    ws = _ws_path(tmp_client_workspace)
+    # 6 個 topic：顧問 explicit "核心"，但 score 算出來 auto-suggested 是「重大」
+    # （impact 或 financial 其中一軸 <4，另一軸 ≥3.5 → 重大）
+    conflict_topics = [
+        ("G2-integrity",  3.5, 4.0),
+        ("G3-compliance", 3.5, 4.0),
+        ("S1-labor",      4.0, 3.5),
+        ("S4-health",     4.0, 3.5),
+        ("S7-privacy",    3.5, 4.0),
+        ("S8-experience", 3.0, 4.0),
+    ]
+    for slug, _i, _f in conflict_topics:
+        _write_topic(
+            ws,
+            slug,
+            {"name": slug, "axis": "S", "materiality_tier": "核心"},
+        )
+
+    # score 6 次（impact severity/scope/irreversibility/likelihood 平均 → impact_score；
+    # financial magnitude/probability 平均 → financial_score）。為了精確命中目標分數，
+    # 直接給四項相同 severity 等於目標 impact_score；兩項 magnitude/probability 等於 financial。
+    for slug, target_impact, target_financial in conflict_topics:
+        score_topic_dual_axis(
+            client_slug="test-client",
+            topic_slug=slug,
+            impact=ImpactScores(
+                severity=target_impact, scope=target_impact,
+                irreversibility=target_impact, likelihood=target_impact,
+            ),
+            financial=FinancialScores(
+                magnitude=target_financial, time_horizon="M", probability=target_financial,
+            ),
+            actor="consultant:test",
+        )
+
+    # 額外加 1 個 aligned topic（score=核心 / fm=核心）— 不該算 override
+    _write_topic(
+        ws,
+        "E1-aligned",
+        {"name": "對齊樣本", "axis": "E", "materiality_tier": "核心"},
+    )
+    score_topic_dual_axis(
+        client_slug="test-client",
+        topic_slug="E1-aligned",
+        impact=ImpactScores(severity=5, scope=5, irreversibility=5, likelihood=5),
+        financial=FinancialScores(magnitude=5, time_horizon="L", probability=5),
+        actor="consultant:test",
+    )
+
+    matrix = generate_materiality_matrix(
+        client_slug="test-client", year=2025, include_svg=False
+    )
+
+    # 6 個衝突全部以 override 形式被保留（R4a bug 修補前會是 0）
+    override_slugs = {ov.slug for ov in matrix.tier_overrides}
+    expected = {slug for slug, _i, _f in conflict_topics}
+    assert override_slugs == expected, (
+        f"expected 6 explicit-vs-auto overrides {expected}, got {override_slugs}"
+    )
+    assert len(matrix.tier_overrides) == 6
+    # aligned 不該入 overrides
+    assert "E1-aligned" not in override_slugs
+    # 所有 override 的 resolved_tier 仍為核心（honor explicit），auto 為重大
+    for ov in matrix.tier_overrides:
+        assert ov.resolved_tier == "核心"
+        assert ov.auto_suggested_tier == "重大"
+        assert ov.frontmatter_tier == "核心"

@@ -17,9 +17,9 @@ TOC (4.6.1 (b)：硬門檻 500 行使用 TL;DR+index 對應)：
     L58+ — tier resolution: _classify_tier / resolve_materiality_tier
     L120+ — Tool 1: search_topics_universe + TopicCandidate
     L230+ — Tool 2: score_topic_dual_axis + ImpactScores/FinancialScores
-    L280+ — Tool 3: generate_materiality_matrix + MaterialityMatrix + TierOverride
-    L450+ — Tool 4: stakeholder_engagement_helper + EngagementRecord
-    L550+ — register(server) + __all__
+    L330+ — Tool 3: generate_materiality_matrix + MaterialityMatrix + TierOverride
+    L520+ — Tool 4: stakeholder_engagement_helper + EngagementRecord
+    L580+ — register(server) + __all__
 
 R3 收斂：frontmatter explicit tier vs `_classify_tier` 二套標準衝突
 （walkthroughs/lealea-5364-phase3.md §3.265 + §7 backlog #3）由
@@ -269,6 +269,7 @@ class TopicScoreResult(BaseModel):
     materiality_tier: Literal["核心", "重大", "邊界"]
     page_file: str
     timeline_entry_id: int
+    tier_resolution_warning: Optional[str] = None
 
 
 def score_topic_dual_axis(
@@ -279,7 +280,16 @@ def score_topic_dual_axis(
     actor: str,
     rationale: Optional[str] = None,
 ) -> TopicScoreResult:
-    """Phase 3 step 2 — write dual-axis scores onto a topic."""
+    """Phase 3 step 2 — 寫入雙軸評分並透過 ``resolve_materiality_tier`` 收斂 tier。
+
+    R4a 修補（lealea-5364-phase3-r3.md §5.1）：原實作直接 `_classify_tier()`
+    把自動算法結果硬寫回 frontmatter，會靜默吞掉顧問先前 explicit 設定的
+    `materiality_tier`（例如 SP1-004 SOP §4 顧問 nuanced 標 "核心"）。
+    現改為先讀既有 frontmatter tier → 透過 resolver 與自動建議收斂；若顧問
+    explicit 與 auto-suggested 不一致則 honor explicit + emit warning，並
+    額外寫一筆 ``action='verify', payload.detail=warning`` 的 timeline 條目
+    供 audit trail（同時 response 多出 ``tier_resolution_warning`` 欄位）。
+    """
     client_path = find_client_workspace(client_slug)
     page = client_path / "entities" / "topics" / f"{topic_slug}.md"
     fm, body = _read_md(page)
@@ -287,7 +297,9 @@ def score_topic_dual_axis(
         (impact.severity + impact.scope + impact.irreversibility + impact.likelihood) / 4.0, 3
     )
     financial_score = round((financial.magnitude + financial.probability) / 2.0, 3)
-    tier = _classify_tier(impact_score, financial_score)
+    existing_tier_raw = fm.get("materiality_tier")
+    existing_tier = str(existing_tier_raw) if existing_tier_raw is not None else None
+    tier, warning = resolve_materiality_tier(existing_tier, impact_score, financial_score)
     fm.update(
         {
             "slug": topic_slug, "name": fm.get("name", topic_slug), "axis": fm.get("axis", "E"),
@@ -301,10 +313,21 @@ def score_topic_dual_axis(
         "tier": tier, "rationale": rationale,
     }
     body, tl_id = _append_timeline_md(body, "verify", payload, actor)
+    if warning:
+        # 額外 audit-trail 條目：明標 tier resolution warning，方便 timeline
+        # 過濾出「顧問 explicit vs auto-suggested 不一致」的歷史事件。
+        body, _ = _append_timeline_md(
+            body, "verify",
+            {"detail": warning, "frontmatter_tier": existing_tier,
+             "auto_tier": _classify_tier(impact_score, financial_score),
+             "resolved_tier": tier},
+            actor,
+        )
     _write_md(page, fm, body)
     return TopicScoreResult(
         topic_slug=topic_slug, impact_score=impact_score, financial_score=financial_score,
         materiality_tier=tier, page_file=str(page), timeline_entry_id=tl_id,
+        tier_resolution_warning=warning,
     )
 
 
